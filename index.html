@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>Photo-Reader - Advanced PDF & Text Slideshow Viewer | Multi-Page PDF & Word Display Tool</title>
+    <meta name="description" content="Photo-Reader is a powerful web-based PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, customizable timing, and visual overlays. Perfect for presentations, document review, speed reading, and file navigation.">
+    <meta name="keywords" content="PDF viewer, PDF slideshow, text viewer, word display, speed reading, document viewer, presentation tool, multi-page PDF, fullscreen PDF, PDF navigation, document slideshow, PDF reader, text reader, web PDF viewer">
+    <meta name="author" content="Photo-Reader">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="Photo-Reader - Advanced PDF & Text Slideshow Viewer">
+    <meta property="og:description" content="Powerful web-based PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, and customizable timing controls.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://radius.center/photo-reader/">
+    <meta property="og:site_name" content="Photo-Reader">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Photo-Reader - Advanced PDF & Text Slideshow Viewer">
+    <meta name="twitter:description" content="Powerful web-based PDF and text slideshow viewer with multi-page display, word-by-word text display, and fullscreen presentation mode.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://radius.center/photo-reader/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" as="script">
+    
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Photo-Reader",
+        "description": "Advanced PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, and customizable timing controls.",
+        "url": "https://radius.center/photo-reader/",
+        "applicationCategory": "DocumentViewer",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "PDF slideshow presentation",
+            "Text file word-by-word display",
+            "Multi-page viewing (1, 2, or 3 pages)",
+            "Fullscreen presentation mode",
+            "Customizable timing intervals",
+            "Visual overlay markers",
+            "Audio tone generation",
+            "Keyboard controls",
+            "Scrollable PDF preview",
+            "Speed reading support"
+        ]
+    }
+    </script>
+</head>
+<body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <div class="container">
+        <!-- Header with semantic markup -->
+        <header class="control-bar" role="banner">
+            <h1 class="visually-hidden">Photo-Reader - PDF Slideshow Viewer</h1>
+            <div class="control-group">
+                <button id="openBtn" class="btn">Open</button>
+                <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+            </div>
+            
+            <div class="control-group">
+                <select id="preloaded">
+                    <option value="">Preloaded files</option>
+                    <option value="./bible.txt">Bible</option>
+                    <option value="./english_dictionary.pdf">English Dictionary</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="pageView">Pages:</label>
+                <select id="pageView">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+            
+            
+            <div class="control-group">
+                <button id="prevBtn" class="btn nav-btn" disabled title="Previous Page">◀</button>
+                <button id="nextBtn" class="btn nav-btn" disabled title="Next Page">▶</button>
+            </div>
+            
+            <div class="control-group">
+                <label for="startPage">Start:</label>
+                <input type="number" id="startPage" min="1" value="1" class="page-input">
+            </div>
+            
+            <div class="control-group">
+                <label for="endPage">End:</label>
+                <input type="number" id="endPage" min="1" value="1" class="page-input">
+                <label>
+                    <input type="checkbox" id="centerDot"> <span class="icon-center-dot"></span>
+                </label>
+                <label>
+                    <input type="checkbox" id="cornerCircles"> <span class="icon-corner-circles"></span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label for="interval">Interval:</label>
+                <input type="number" id="interval" min="0.00" max="60.00" step="0.01" value="0.20" class="interval-input">
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="audioEnabled"> 🔊
+                </label>
+                <input type="number" id="audioFrequency" min="0.00" max="60.00" step="0.01" value="4.00" class="audio-frequency-input">
+                <label for="audioFrequency">Hz</label>
+            </div>
+            
+            <div class="control-group">
+                <button id="playBtn" class="btn" disabled>Play</button>
+            </div>
+        </header>
+        
+        <!-- Main content area -->
+        <main id="main-content" class="pdf-container" role="main" aria-label="PDF Display Area">
+            <div class="pdf-display" id="pdfDisplay">
+                <div class="no-pdf" role="status" aria-live="polite">Load a PDF or TXT file to begin</div>
+            </div>
+            
+            <!-- Overlay for dots and circles -->
+            <div class="overlay" id="overlay" aria-hidden="true"></div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
