@@ -38,6 +38,9 @@
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
+    <!-- Document parsing libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
     {
@@ -78,14 +81,15 @@
             <h1 class="visually-hidden">Photo-Reader - PDF Slideshow Viewer</h1>
             <div class="control-group">
                 <button id="openBtn" class="btn">Open</button>
-                <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+                <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.epub,.mobi" style="display: none;">
             </div>
             
             <div class="control-group">
                 <select id="preloaded">
-                    <option value="">Preloaded files</option>
+                    <option value="">Preloaded Files</option>
                     <option value="./bible.txt">Bible</option>
                     <option value="./english_dictionary.pdf">English Dictionary</option>
+                    <option value="./The_Old_Man_and_the_Sea.docx">Old Man & the Sea</option>
                 </select>
             </div>
             
@@ -112,9 +116,15 @@
             <div class="control-group">
                 <label for="endPage">End:</label>
                 <input type="number" id="endPage" min="1" value="1" class="page-input">
+            </div>
+            
+            <div class="control-group">
                 <label>
                     <input type="checkbox" id="centerDot"> <span class="icon-center-dot"></span>
                 </label>
+            </div>
+            
+            <div class="control-group">
                 <label>
                     <input type="checkbox" id="cornerCircles"> <span class="icon-corner-circles"></span>
                 </label>
@@ -136,12 +146,16 @@
             <div class="control-group">
                 <button id="playBtn" class="btn" disabled>Play</button>
             </div>
+            
+            <div class="control-group help-btn-group">
+                <a href="README.html" class="btn help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>
+            </div>
         </header>
         
         <!-- Main content area -->
         <main id="main-content" class="pdf-container" role="main" aria-label="PDF Display Area">
             <div class="pdf-display" id="pdfDisplay">
-                <div class="no-pdf" role="status" aria-live="polite">Load a PDF or TXT file to begin</div>
+                <div class="no-pdf" role="status" aria-live="polite">Load a PDF, TXT, or DOCX file to begin</div>
             </div>
             
             <!-- Overlay for dots and circles -->
@@ -149,6 +163,6 @@
         </main>
     </div>
     
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

@@ -10,10 +10,12 @@ class PhotoReader {
         this.gainNode = null;
         
         // Text file support
-        this.currentFileType = null; // 'pdf' or 'txt'
+        this.currentFileType = null; // 'pdf', 'txt', 'docx', 'epub', or 'mobi'
         this.textContent = null;
         this.textWords = [];
         this.currentWordIndex = 0;
+        this.documentContent = null; // For storing parsed document content
+        this.documentPages = []; // For storing document split into pages
         
         this.initializeElements();
         this.bindEvents();
@@ -94,15 +96,27 @@ class PhotoReader {
                 this.currentFileType = 'txt';
                 const text = await file.text();
                 await this.loadTextFile(text);
+            } else if (fileName.endsWith('.docx')) {
+                this.currentFileType = 'docx';
+                const arrayBuffer = await file.arrayBuffer();
+                await this.loadDocumentFile(arrayBuffer, 'docx');
+            } else if (fileName.endsWith('.epub')) {
+                this.currentFileType = 'epub';
+                const arrayBuffer = await file.arrayBuffer();
+                await this.loadEbookFile(arrayBuffer, 'epub');
+            } else if (fileName.endsWith('.mobi')) {
+                this.currentFileType = 'mobi';
+                const arrayBuffer = await file.arrayBuffer();
+                await this.loadEbookFile(arrayBuffer, 'mobi');
             } else {
-                alert('Please select a valid PDF or TXT file.');
+                alert('Please select a valid PDF, TXT, DOCX, EPUB, or MOBI file.');
                 this.hideLoading();
                 return;
             }
             
         } catch (error) {
             console.error('Error loading file:', error);
-            alert('Error loading file.');
+            alert('Error loading file: ' + error.message);
             this.hideLoading();
         }
     }
@@ -129,8 +143,20 @@ class PhotoReader {
                 this.currentFileType = 'txt';
                 const text = await response.text();
                 await this.loadTextFile(text);
+            } else if (fileName.endsWith('.docx')) {
+                this.currentFileType = 'docx';
+                const arrayBuffer = await response.arrayBuffer();
+                await this.loadDocumentFile(arrayBuffer, 'docx');
+            } else if (fileName.endsWith('.epub')) {
+                this.currentFileType = 'epub';
+                const arrayBuffer = await response.arrayBuffer();
+                await this.loadEbookFile(arrayBuffer, 'epub');
+            } else if (fileName.endsWith('.mobi')) {
+                this.currentFileType = 'mobi';
+                const arrayBuffer = await response.arrayBuffer();
+                await this.loadEbookFile(arrayBuffer, 'mobi');
             } else {
-                alert('Unsupported file type. Please select a PDF or TXT file.');
+                alert('Unsupported file type. Please select a PDF, TXT, DOCX, EPUB, or MOBI file.');
                 this.hideLoading();
                 return;
             }
@@ -249,6 +275,329 @@ class PhotoReader {
         this.hideLoading();
     }
 
+    async loadDocumentFile(data, fileType) {
+        try {
+            let htmlContent = '';
+            let plainText = '';
+            
+            if (fileType === 'docx') {
+                // Use mammoth.js to convert DOCX to HTML
+                if (typeof mammoth === 'undefined') {
+                    throw new Error('Mammoth.js library not loaded');
+                }
+                
+                const result = await mammoth.convertToHtml({ arrayBuffer: data });
+                htmlContent = result.value;
+                
+                // Extract plain text for word-by-word mode
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                plainText = tempDiv.textContent || tempDiv.innerText || '';
+            }
+            
+            // Store the content and split into pages
+            this.documentContent = htmlContent;
+            this.textContent = plainText;
+            this.textWords = plainText.split(/\s+/).filter(word => word.trim().length > 0);
+            this.currentWordIndex = 0;
+            
+            // Split document into pages for slideshow
+            this.documentPages = this.splitDocumentIntoPages(htmlContent);
+            
+            // Reset page-related controls for document mode
+            this.totalPages = this.documentPages.length;
+            this.startPage.max = this.totalPages;
+            this.endPage.max = this.totalPages;
+            this.startPage.value = 1;
+            this.endPage.value = this.totalPages;
+            
+            this.currentPage = 1;
+            this.playBtn.disabled = false;
+            
+            await this.renderDocumentPreview();
+            
+            // Enable navigation buttons for document mode
+            this.updateNavigationButtons();
+            
+            this.hideLoading();
+            
+        } catch (error) {
+            console.error('Error loading document file:', error);
+            throw error;
+        }
+    }
+
+    async loadEbookFile(data, fileType) {
+        try {
+            let htmlContent = '';
+            let plainText = '';
+            
+            if (fileType === 'epub') {
+                // Enhanced EPUB parsing with better error handling
+                try {
+                    console.log('Processing EPUB file...');
+                    const uint8Array = new Uint8Array(data);
+                    
+                    // Try multiple text decoders for better compatibility
+                    let text = '';
+                    try {
+                        const decoder = new TextDecoder('utf-8', { fatal: false });
+                        text = decoder.decode(uint8Array);
+                    } catch (e) {
+                        console.log('UTF-8 decoding failed, trying latin1...');
+                        const decoder = new TextDecoder('latin1', { fatal: false });
+                        text = decoder.decode(uint8Array);
+                    }
+                    
+                    console.log('Decoded text length:', text.length);
+                    
+                    // EPUB files contain HTML/XHTML content - extract with multiple strategies
+                    let extractedContent = [];
+                    
+                    // Strategy 1: Extract paragraph content
+                    const paragraphMatches = text.match(/<p[^>]*>(.*?)<\/p>/gis) || [];
+                    if (paragraphMatches.length > 0) {
+                        extractedContent = extractedContent.concat(paragraphMatches);
+                    }
+                    
+                    // Strategy 2: Extract div content
+                    const divMatches = text.match(/<div[^>]*>(.*?)<\/div>/gis) || [];
+                    if (divMatches.length > 0) {
+                        extractedContent = extractedContent.concat(divMatches);
+                    }
+                    
+                    // Strategy 3: Extract body content
+                    const bodyMatches = text.match(/<body[^>]*>(.*?)<\/body>/gis) || [];
+                    if (bodyMatches.length > 0) {
+                        extractedContent = extractedContent.concat(bodyMatches);
+                    }
+                    
+                    // Strategy 4: General text extraction
+                    if (extractedContent.length === 0) {
+                        const generalMatches = text.match(/[A-Z][a-zA-Z\s.,!?;:'"()\-—–]{100,}/g) || [];
+                        extractedContent = generalMatches;
+                    }
+                    
+                    console.log('Extracted content pieces:', extractedContent.length);
+                    
+                    if (extractedContent.length > 0) {
+                        // Join and clean the content
+                        htmlContent = extractedContent.join(' ');
+                        
+                        // Clean up HTML tags for plain text
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = htmlContent;
+                        plainText = tempDiv.textContent || tempDiv.innerText || '';
+                        
+                        // If we still don't have plain text, extract it directly
+                        if (!plainText) {
+                            plainText = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                        }
+                        
+                        // Create formatted HTML from plain text
+                        if (plainText && !htmlContent.includes('<p>')) {
+                            htmlContent = plainText
+                                .split(/\.\s+/)
+                                .filter(sentence => sentence.length > 20)
+                                .map(sentence => `<p>${sentence.trim()}${sentence.endsWith('.') ? '' : '.'}</p>`)
+                                .join('');
+                        }
+                    }
+                    
+                    console.log('Final plain text length:', plainText.length);
+                    
+                    if (!plainText || plainText.length < 100) {
+                        throw new Error('Unable to extract sufficient readable content from this EPUB file. The file may be encrypted, corrupted, or use an unsupported format.');
+                    }
+                    
+                } catch (error) {
+                    console.error('EPUB parsing error:', error);
+                    throw new Error(`EPUB parsing failed: ${error.message}`);
+                }
+                
+            } else if (fileType === 'mobi') {
+                // Enhanced MOBI parsing with better text extraction
+                try {
+                    console.log('Processing MOBI file...');
+                    
+                    // Try multiple text decoders for better compatibility
+                    let text = '';
+                    try {
+                        const decoder = new TextDecoder('utf-8', { fatal: false });
+                        text = decoder.decode(data);
+                    } catch (e) {
+                        console.log('UTF-8 decoding failed, trying latin1...');
+                        const decoder = new TextDecoder('latin1', { fatal: false });
+                        text = decoder.decode(data);
+                    }
+                    
+                    console.log('Decoded MOBI text length:', text.length);
+                    
+                    // MOBI files contain readable text mixed with binary data
+                    // Use multiple extraction strategies
+                    let extractedTexts = [];
+                    
+                    // Strategy 1: Extract longer text sequences
+                    const longTextMatches = text.match(/[A-Z][a-zA-Z\s.,!?;:'"()\-—–]{100,}/g) || [];
+                    if (longTextMatches.length > 0) {
+                        extractedTexts = extractedTexts.concat(longTextMatches);
+                    }
+                    
+                    // Strategy 2: Extract medium text sequences
+                    const mediumTextMatches = text.match(/[a-zA-Z][a-zA-Z\s.,!?;:'"()\-—–]{50,}/g) || [];
+                    if (mediumTextMatches.length > 0) {
+                        extractedTexts = extractedTexts.concat(mediumTextMatches);
+                    }
+                    
+                    // Strategy 3: Look for chapter or paragraph markers
+                    const chapterMatches = text.match(/Chapter\s+\d+[^]*?(?=Chapter\s+\d+|$)/gi) || [];
+                    if (chapterMatches.length > 0) {
+                        extractedTexts = extractedTexts.concat(chapterMatches);
+                    }
+                    
+                    console.log('Extracted text pieces:', extractedTexts.length);
+                    
+                    if (extractedTexts.length > 0) {
+                        // Clean and join the text matches
+                        plainText = extractedTexts
+                            .map(match => match.trim())
+                            .filter(match => match.length > 30) // Filter out short fragments
+                            .join(' ')
+                            .replace(/\s+/g, ' ')
+                            .replace(/[^\x20-\x7E\s\u00A0-\u00FF]/g, '') // Keep basic Latin characters
+                            .replace(/\u0000/g, '') // Remove null characters
+                            .trim();
+                    }
+                    
+                    console.log('Final MOBI plain text length:', plainText.length);
+                    
+                    if (!plainText || plainText.length < 200) {
+                        throw new Error('Unable to extract sufficient readable text from this MOBI file. The file may be encrypted, corrupted, or use an unsupported format.');
+                    }
+                    
+                    // Convert to HTML with better paragraph detection
+                    htmlContent = plainText
+                        .split(/\.\s+(?=[A-Z])/) // Split on sentence endings followed by capital letters
+                        .map(sentence => sentence.trim())
+                        .filter(sentence => sentence.length > 15)
+                        .map(sentence => `<p>${sentence}${sentence.endsWith('.') ? '' : '.'}</p>`)
+                        .join('');
+                    
+                } catch (error) {
+                    console.error('MOBI parsing error:', error);
+                    throw new Error(`MOBI parsing failed: ${error.message}`);
+                }
+            }
+            
+            // Extract plain text if we only have HTML
+            if (!plainText && htmlContent) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                plainText = tempDiv.textContent || tempDiv.innerText || '';
+            }
+            
+            // Validate we have content
+            if (!htmlContent || !plainText || plainText.length < 50) {
+                throw new Error(`Unable to extract readable content from this ${fileType.toUpperCase()} file.`);
+            }
+            
+            // Store the content and split into pages
+            this.documentContent = htmlContent;
+            this.textContent = plainText;
+            this.textWords = plainText.split(/\s+/).filter(word => word.trim().length > 0);
+            this.currentWordIndex = 0;
+            
+            // Split document into pages for slideshow
+            this.documentPages = this.splitDocumentIntoPages(htmlContent);
+            
+            // Ensure we have at least one page
+            if (this.documentPages.length === 0) {
+                this.documentPages = [htmlContent];
+            }
+            
+            // Reset page-related controls for ebook mode
+            this.totalPages = this.documentPages.length;
+            this.startPage.max = this.totalPages;
+            this.endPage.max = this.totalPages;
+            this.startPage.value = 1;
+            this.endPage.value = this.totalPages;
+            
+            this.currentPage = 1;
+            this.playBtn.disabled = false;
+            
+            await this.renderDocumentPreview();
+            
+            // Enable navigation buttons for ebook mode
+            this.updateNavigationButtons();
+            
+            this.hideLoading();
+            
+        } catch (error) {
+            console.error('Error loading ebook file:', error);
+            throw error;
+        }
+    }
+
+    splitDocumentIntoPages(htmlContent) {
+        // Split document content into pages based on content length
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const elements = Array.from(tempDiv.children);
+        const pages = [];
+        let currentPage = '';
+        let currentLength = 0;
+        const maxPageLength = 2000; // Approximate characters per page
+        
+        for (const element of elements) {
+            const elementText = element.textContent || '';
+            
+            if (currentLength + elementText.length > maxPageLength && currentPage.length > 0) {
+                // Start new page
+                pages.push(currentPage);
+                currentPage = element.outerHTML;
+                currentLength = elementText.length;
+            } else {
+                // Add to current page
+                currentPage += element.outerHTML;
+                currentLength += elementText.length;
+            }
+        }
+        
+        // Add the last page
+        if (currentPage.length > 0) {
+            pages.push(currentPage);
+        }
+        
+        // If no pages were created, create one page with all content
+        if (pages.length === 0) {
+            pages.push(htmlContent);
+        }
+        
+        return pages;
+    }
+
+    async renderDocumentPreview() {
+        this.pdfDisplay.innerHTML = '';
+        this.pdfDisplay.classList.remove('two-pages', 'three-pages');
+        
+        // For preview mode, show the current page
+        const pageContent = this.documentPages[this.currentPage - 1] || this.documentContent;
+        
+        const documentPageDiv = document.createElement('div');
+        documentPageDiv.className = 'document-page';
+        
+        const documentPreview = document.createElement('div');
+        documentPreview.className = 'document-preview';
+        documentPreview.innerHTML = pageContent;
+        
+        documentPageDiv.appendChild(documentPreview);
+        this.pdfDisplay.appendChild(documentPageDiv);
+        
+        // Update overlay to show center dot and corner circles for document files
+        this.updateOverlay();
+    }
+
     async loadPDF(arrayBuffer) {
         this.pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
         this.totalPages = this.pdfDoc.numPages;
@@ -296,13 +645,18 @@ class PhotoReader {
         textDisplay.appendChild(textPreview);
         this.pdfDisplay.appendChild(textDisplay);
         
-        // Clear overlay for text mode
-        this.overlay.innerHTML = '';
+        // Update overlay to show center dot and corner circles for text files
+        this.updateOverlay();
     }
 
     async updateDisplay() {
         if (this.currentFileType === 'txt') {
             await this.renderTextPreview();
+            return;
+        }
+        
+        if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            await this.renderDocumentPage();
             return;
         }
         
@@ -344,6 +698,27 @@ class PhotoReader {
         
         // Force immediate DOM update before overlay
         this.pdfDisplay.offsetHeight;
+        this.updateOverlay();
+    }
+
+    async renderDocumentPage() {
+        this.pdfDisplay.innerHTML = '';
+        this.pdfDisplay.classList.remove('two-pages', 'three-pages');
+        
+        // Get the current page content
+        const pageContent = this.documentPages[this.currentPage - 1] || this.documentContent;
+        
+        const documentPageDiv = document.createElement('div');
+        documentPageDiv.className = 'document-page';
+        
+        const documentPreview = document.createElement('div');
+        documentPreview.className = 'document-preview';
+        documentPreview.innerHTML = pageContent;
+        
+        documentPageDiv.appendChild(documentPreview);
+        this.pdfDisplay.appendChild(documentPageDiv);
+        
+        // Update overlay to show center dot and corner circles for document files
         this.updateOverlay();
     }
     
@@ -399,52 +774,70 @@ class PhotoReader {
     updateOverlay() {
         this.overlay.innerHTML = '';
         
-        if (!this.pdfDoc) return;
-        
-        const containerRect = this.pdfContainer.getBoundingClientRect();
-        const displayRect = this.pdfDisplay.getBoundingClientRect();
-        
-        // Center dot
-        if (this.centerDot.checked) {
-            const centerDot = document.createElement('div');
-            centerDot.className = 'dot center-dot';
-            this.overlay.appendChild(centerDot);
-        }
-        
-        // Corner circles
-        if (this.cornerCircles.checked) {
-            const viewMode = parseInt(this.pageView.value);
-            const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
+        // Support overlay for PDF files
+        if (this.pdfDoc) {
+            const containerRect = this.pdfContainer.getBoundingClientRect();
+            const displayRect = this.pdfDisplay.getBoundingClientRect();
             
-            if (viewMode === 1) {
-                // Single page - all four corners
+            // Center dot
+            if (this.centerDot.checked) {
+                const centerDot = document.createElement('div');
+                centerDot.className = 'dot center-dot';
+                this.overlay.appendChild(centerDot);
+            }
+            
+            // Corner circles
+            if (this.cornerCircles.checked) {
+                const viewMode = parseInt(this.pageView.value);
+                const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
+                
+                if (viewMode === 1) {
+                    // Single page - all four corners
+                    this.createCornerDot('top-left');
+                    this.createCornerDot('top-right');
+                    this.createCornerDot('bottom-left');
+                    this.createCornerDot('bottom-right');
+                } else if (viewMode === 2) {
+                    // Two pages - left corners on left page, right corners on right page
+                    if (pages.length > 0) {
+                        this.createCornerDot('top-left', pages[0]);
+                        this.createCornerDot('bottom-left', pages[0]);
+                    }
+                    if (pages.length > 1) {
+                        this.createCornerDot('top-right', pages[1]);
+                        this.createCornerDot('bottom-right', pages[1]);
+                    }
+                } else if (viewMode === 3) {
+                    // Three pages - left corners on leftmost page, right corners on rightmost page
+                    if (pages.length > 0) {
+                        this.createCornerDot('top-left', pages[0]);
+                        this.createCornerDot('bottom-left', pages[0]);
+                    }
+                    if (pages.length > 2) {
+                        this.createCornerDot('top-right', pages[2]);
+                        this.createCornerDot('bottom-right', pages[2]);
+                    } else if (pages.length > 1) {
+                        this.createCornerDot('top-right', pages[1]);
+                        this.createCornerDot('bottom-right', pages[1]);
+                    }
+                }
+            }
+        }
+        // Support overlay for text files and document files
+        else if (this.currentFileType === 'txt' || this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Center dot
+            if (this.centerDot.checked) {
+                const centerDot = document.createElement('div');
+                centerDot.className = 'dot center-dot';
+                this.overlay.appendChild(centerDot);
+            }
+            
+            // Corner circles - all four corners for text and document display
+            if (this.cornerCircles.checked) {
                 this.createCornerDot('top-left');
                 this.createCornerDot('top-right');
                 this.createCornerDot('bottom-left');
                 this.createCornerDot('bottom-right');
-            } else if (viewMode === 2) {
-                // Two pages - left corners on left page, right corners on right page
-                if (pages.length > 0) {
-                    this.createCornerDot('top-left', pages[0]);
-                    this.createCornerDot('bottom-left', pages[0]);
-                }
-                if (pages.length > 1) {
-                    this.createCornerDot('top-right', pages[1]);
-                    this.createCornerDot('bottom-right', pages[1]);
-                }
-            } else if (viewMode === 3) {
-                // Three pages - left corners on leftmost page, right corners on rightmost page
-                if (pages.length > 0) {
-                    this.createCornerDot('top-left', pages[0]);
-                    this.createCornerDot('bottom-left', pages[0]);
-                }
-                if (pages.length > 2) {
-                    this.createCornerDot('top-right', pages[2]);
-                    this.createCornerDot('bottom-right', pages[2]);
-                } else if (pages.length > 1) {
-                    this.createCornerDot('top-right', pages[1]);
-                    this.createCornerDot('bottom-right', pages[1]);
-                }
             }
         }
     }
@@ -537,7 +930,7 @@ class PhotoReader {
         }
         
         if (this.currentFileType === 'txt') {
-            // Text mode: start from first word or specified start position
+            // Text mode only: start from first word or specified start position
             const startWord = parseInt(this.startPage.value) - 1;
             this.currentWordIndex = Math.max(0, startWord);
             await this.displayCurrentWord();
@@ -546,6 +939,16 @@ class PhotoReader {
             const intervalMs = parseFloat(this.interval.value) * 1000;
             this.slideInterval = setInterval(() => {
                 this.nextTextWord();
+            }, intervalMs);
+        } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Document mode: page-by-page slideshow like PDFs
+            this.currentPage = parseInt(this.startPage.value);
+            await this.updateDisplay();
+            
+            // Start slideshow timer for documents
+            const intervalMs = parseFloat(this.interval.value) * 1000;
+            this.slideInterval = setInterval(() => {
+                this.nextDocumentSlide();
             }, intervalMs);
         } else {
             // PDF mode: existing logic
@@ -592,6 +995,9 @@ class PhotoReader {
         wordDisplay.textContent = word;
         
         this.pdfDisplay.appendChild(wordDisplay);
+        
+        // Update overlay to show center dot and corner circles for text files
+        this.updateOverlay();
     }
     
     async nextTextWord() {
@@ -614,6 +1020,18 @@ class PhotoReader {
         this.currentPage += viewMode;
         if (this.currentPage > endPage) {
             this.currentPage = startPage;
+        }
+        
+        await this.updateDisplay();
+    }
+
+    async nextDocumentSlide() {
+        const startPage = parseInt(this.startPage.value);
+        const endPage = parseInt(this.endPage.value);
+        
+        this.currentPage++;
+        if (this.currentPage > endPage) {
+            this.currentPage = startPage; // Loop back to start
         }
         
         await this.updateDisplay();
@@ -704,6 +1122,17 @@ class PhotoReader {
     
     // Navigation button functions
     async previousPage() {
+        if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Document navigation
+            this.currentPage--;
+            if (this.currentPage < 1) {
+                this.currentPage = 1;
+            }
+            this.updateNavigationButtons();
+            await this.updateDisplay();
+            return;
+        }
+        
         if (!this.pdfDoc) return;
         
         const viewMode = parseInt(this.pageView.value);
@@ -718,6 +1147,17 @@ class PhotoReader {
     }
     
     async nextPage() {
+        if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Document navigation
+            this.currentPage++;
+            if (this.currentPage > this.totalPages) {
+                this.currentPage = this.totalPages;
+            }
+            this.updateNavigationButtons();
+            await this.updateDisplay();
+            return;
+        }
+        
         if (!this.pdfDoc) return;
         
         const viewMode = parseInt(this.pageView.value);
@@ -733,9 +1173,16 @@ class PhotoReader {
     
     updateNavigationButtons() {
         if (this.currentFileType === 'txt') {
-            // Disable navigation buttons for text mode
+            // Disable navigation buttons for text mode only
             this.prevBtn.disabled = true;
             this.nextBtn.disabled = true;
+            return;
+        }
+        
+        if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Enable navigation buttons for document mode
+            this.prevBtn.disabled = this.currentPage <= 1;
+            this.nextBtn.disabled = this.currentPage >= this.totalPages;
             return;
         }
         
