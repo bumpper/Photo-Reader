@@ -48,17 +48,31 @@ class PhotoReader {
         this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         this.preloaded.addEventListener('change', (e) => this.handlePreloadedSelect(e));
         this.pageView.addEventListener('change', () => {
+            this.saveSettings();
             this.updateNavigationButtons();
             this.updateDisplay();
         });
-        this.centerDot.addEventListener('change', () => this.updateOverlay());
-        this.cornerCircles.addEventListener('change', () => this.updateOverlay());
+        this.centerDot.addEventListener('change', () => {
+            this.saveSettings();
+            this.updateOverlay();
+        });
+        this.cornerCircles.addEventListener('change', () => {
+            this.saveSettings();
+            this.updateOverlay();
+        });
         this.prevBtn.addEventListener('click', () => this.previousPage());
         this.nextBtn.addEventListener('click', () => this.nextPage());
         this.startPage.addEventListener('change', () => this.validatePageRange());
         this.endPage.addEventListener('change', () => this.validatePageRange());
-        this.interval.addEventListener('change', () => this.validateInterval());
-        this.audioFrequency.addEventListener('change', () => this.validateAudioFrequency());
+        this.interval.addEventListener('change', () => {
+            this.saveSettings();
+            this.validateInterval();
+        });
+        this.audioEnabled.addEventListener('change', () => this.saveSettings());
+        this.audioFrequency.addEventListener('change', () => {
+            this.saveSettings();
+            this.validateAudioFrequency();
+        });
         this.playBtn.addEventListener('click', () => this.toggleSlideshow());
         
         // Keyboard events
@@ -74,6 +88,52 @@ class PhotoReader {
     setupPDFJS() {
         // Set PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Load saved settings
+        this.loadSettings();
+    }
+    
+    saveSettings() {
+        const settings = {
+            pageView: this.pageView.value,
+            centerDot: this.centerDot.checked,
+            cornerCircles: this.cornerCircles.checked,
+            interval: this.interval.value,
+            audioEnabled: this.audioEnabled.checked,
+            audioFrequency: this.audioFrequency.value
+        };
+        localStorage.setItem('photoReaderSettings', JSON.stringify(settings));
+    }
+    
+    loadSettings() {
+        const savedSettings = localStorage.getItem('photoReaderSettings');
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                
+                // Apply saved settings
+                if (settings.pageView) {
+                    this.pageView.value = settings.pageView;
+                }
+                if (settings.centerDot !== undefined) {
+                    this.centerDot.checked = settings.centerDot;
+                }
+                if (settings.cornerCircles !== undefined) {
+                    this.cornerCircles.checked = settings.cornerCircles;
+                }
+                if (settings.interval) {
+                    this.interval.value = settings.interval;
+                }
+                if (settings.audioEnabled !== undefined) {
+                    this.audioEnabled.checked = settings.audioEnabled;
+                }
+                if (settings.audioFrequency) {
+                    this.audioFrequency.value = settings.audioFrequency;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
     }
     
     async handleFileSelect(event) {

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GemaCrypt - Hebrew & Greek Gematria Calculator</title>
+    <style>
+        body {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            background-color: #003366;
+            color: #FFF;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #FFF;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-top: 30px;
+        }
+        h3 {
+            font-size: 1.2em;
+        }
+        p {
+            margin: 10px 0;
+        }
+        .command {
+            background-color: #222;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            position: relative;
+            font-family: 'Fira Code', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100ch;
+        }
+        .command:hover {
+            background-color: #444;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 50%;
+            right: 5px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        a {
+            color: #ADD8E6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>GemaCrypt - Hebrew & Greek Gematria Calculator</h1>
+    <p>Thank you for downloading GemaCrypt!</p>
+<p>GemaCrypt is a powerful web application for exploring the hidden meanings in Hebrew and Greek texts through gematria calculations. With this app, you can decode Hebrew words to find their numerical values, discover words with matching gematria that are considered spiritual synonyms, and use various Hebrew encryption algorithms like AL-BaM, AT-BaSh, ACh-BI, AYiK-BeCheR, and others to uncover hidden meanings. The application supports multiple gematria systems including Ragil, Katan, HaKlali, Kolel, HaKadmi, HaPerati, and Miluy, making it an essential tool for biblical research, Kabbalah study, and Hebrew cryptography.</p>
+
+    <br><h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#installation-instructions">Installation Instructions</a></li>
+        <li><a href="#for-linux-systems">For Linux Systems (Debian, Ubuntu, CentOS, Red Hat Enterprise)</a></li>
+        <li><a href="#for-macos-systems">For macOS Systems</a></li>
+        <li><a href="#for-freebsd-systems">For FreeBSD Systems</a></li>
+        <li><a href="#for-openbsd-systems">For OpenBSD Systems</a></li>
+        <li><a href="#for-solaris-systems">For Solaris Systems</a></li>
+        <li><a href="#for-windows-systems">For Windows Systems</a></li>
+        <li><a href="#what-the-script-does-automatically">What the Script Does Automatically</a></li>
+        <li><a href="#required-dependencies">Required Dependencies</a></li>
+        <li><a href="#after-installation">After Installation</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+        <li><a href="#support">Support</a></li>
+    </ul>
+
+    <div class="section">
+        <br><h2 id="installation-instructions">Installation Instructions</h2>
+        <p>This README provides step-by-step instructions for installing GemaCrypt on various web server operating systems.</p>
+
+        <br><h3 id="for-linux-systems">For Linux Systems (Debian, Ubuntu, CentOS, Red Hat)</h3>
+        <ol>
+            <li><strong>Access your server via SSH:</strong></li>
+            <div class="command">ssh username@your-server-ip<span class="copy-btn" onclick="copyToClipboard(this, 'ssh username@your-server-ip')">📋</span></div>
+            <li><strong>Download the installation script:</strong></li>
+            <div class="command">wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div>
+            <p>*OR if you have the file locally, upload it to your server*</p>
+            <li><strong>Make the script executable:</strong></li>
+            <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div>
+            <li><strong>Run the installation script with sudo privileges:</strong></li>
+            <div class="command">sudo bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'sudo bash INSTALL.sh')">📋</span></div>
+            <li><strong>Follow the interactive prompts:</strong></li>
+            <ul>
+                <li>Answer y/n for package updates</li>
+                <li>Enter your domain name when prompted</li>
+                <li>Enter your admin email address when prompted</li>
+                <li>Choose whether to run mysql_secure_installation</li>
+            </ul>
+        </ol>
+
+        <br><h3 id="for-macos-systems">For macOS Systems</h3>
+        <ol>
+            <li><strong>Open Terminal application:</strong></li>
+            <ul>
+                <li>Press Cmd + Space, type "Terminal", press Enter</li>
+                <li>OR go to Applications > Utilities > Terminal</li>
+            </ul>
+            <li><strong>Download the installation script:</strong></li>
+            <div class="command">curl -O https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'curl -O https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div>
+            <li><strong>Make the script executable:</strong></li>
+            <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div>
+            <li><strong>Run the installation script:</strong></li>
+            <div class="command">bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'bash INSTALL.sh')">📋</span></div>
+            <p>*Note: The script will automatically install Homebrew if it is not already installed.*</p>
+        </ol>
+
+        <br><h3 id="for-freebsd-systems">For FreeBSD Systems</h3>
+        <ol>
+            <li><strong>Access your server console or SSH:</strong></li>
+            <div class="command">ssh username@your-server-ip<span class="copy-btn" onclick="copyToClipboard(this, 'ssh username@your-server-ip')">📋</span></div>
+            <li><strong>Download the installation script:</strong></li>
+            <div class="command">fetch https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'fetch https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div>
+            <li><strong>Make the script executable:</strong></li>
+            <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div>
+            <li><strong>Run the installation script as root:</strong></li>
+            <div class="command">su -<br>bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'su -\nbash INSTALL.sh')">📋</span></div>
+        </ol>
+
+        <br><h3 id="for-openbsd-systems">For OpenBSD Systems</h3>
+        <ol>
+            <li><strong>Access your server console or SSH:</strong></li>
+            <div class="command">ssh username@your-server-ip<span class="copy-btn" onclick="copyToClipboard(this, 'ssh username@your-server-ip')">📋</span></div>
+            <li><strong>Download the installation script:</strong></li>
+            <div class="command">ftp https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'ftp https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div>
+            <li><strong>Make the script executable:</strong></li>
+            <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div>
+            <li><strong>Run the installation script as root:</strong></li>
+            <div class="command">doas bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'doas bash INSTALL.sh')">📋</span></div>
+        </ol>
+
+        <br><h3 id="for-solaris-systems">For Solaris Systems</h3>
+        <ol>
+            <li><strong>Access your server console or SSH:</strong></li>
+            <div class="command">ssh username@your-server-ip<span class="copy-btn" onclick="copyToClipboard(this, 'ssh username@your-server-ip')">📋</span></div>
+            <li><strong>Download the installation script:</strong></li>
+            <div class="command">wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div>
+            <li><strong>Make the script executable:</strong></li>
+            <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div>
+            <li><strong>Run the installation script with appropriate privileges:</strong></li>
+            <div class="command">pfexec bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'pfexec bash INSTALL.sh')">📋</span></div>
+        </ol>
+
+        <br><h3 id="for-windows-systems">For Windows Systems</h3>
+        <p><strong>Note:</strong> The script now supports Windows via Windows Subsystem for Linux (WSL).</p>
+        <ol>
+            <li><strong>Install Windows Subsystem for Linux (WSL):</strong></li>
+            <ul>
+                <li>Open PowerShell or Command Prompt as Administrator</li>
+                <li>Run: <div class="command">wsl --install<span class="copy-btn" onclick="copyToClipboard(this, 'wsl --install')">📋</span></div></li>
+                <li>Restart your computer if prompted</li>
+                <li>Launch the installed Linux distribution (e.g., Ubuntu) from the Start menu</li>
+                <li>Set up a username and password when prompted</li>
+            </ul>
+            <li><strong>Run the installation script in WSL:</strong></li>
+            <ul>
+                <li>In the WSL terminal, download the script: <div class="command">wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'wget https://raw.githubusercontent.com/bumpper/GemaCrypt/main/INSTALL.sh')">📋</span></div></li>
+                <li>Make it executable: <div class="command">chmod +x INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'chmod +x INSTALL.sh')">📋</span></div></li>
+                <li>Run the script: <div class="command">bash INSTALL.sh<span class="copy-btn" onclick="copyToClipboard(this, 'bash INSTALL.sh')">📋</span></div></li>
+                <li>Follow the interactive prompts as for Linux systems</li>
+            </ul>
+            <p>*If WSL is already installed, simply run the script in your WSL terminal.*</p>
+        </ol>
+
+        <br><h3 id="what-the-script-does-automatically">What the Script Does Automatically:</h3>
+        <ul>
+            <li>Detects your operating system</li>
+            <li>Installs all required dependencies (MySQL, PHP extensions, Apache modules)</li>
+            <li>Downloads and deploys GemaCrypt application</li>
+            <li>Configures domain and email settings</li>
+            <li>Creates secure database with random password</li>
+            <li>Sets up CORS support for proper functionality</li>
+        </ul>
+
+        <br><h3 id="required-dependencies">Required Dependencies:</h3>
+        <p>The script will install these packages based on your operating system:</p>
+        <h4>Core Components:</h4>
+        <ul>
+            <li>MySQL server and client</li>
+            <li>PHP with MySQL extensions (mysql, mysqli, pdo, pdo-mysql)</li>
+            <li>Apache web server with headers and rewrite modules</li>
+            <li>Git (for downloading GemaCrypt)</li>
+        </ul>
+        <h4>Additional PHP Extensions:</h4>
+        <ul>
+            <li>php-curl (for external API calls)</li>
+            <li>php-json (for JSON processing)</li>
+            <li>php-mbstring (for multi-byte string handling)</li>
+            <li>php-xml (for XML processing)</li>
+            <li>php-zip (for file compression)</li>
+            <li>php-gd (for image processing)</li>
+            <li>php-fileinfo (for file type detection)</li>
+            <li>php-openssl (for encryption/security)</li>
+        </ul>
+        <h4>CORS Support:</h4>
+        <ul>
+            <li>Apache headers module</li>
+            <li>Apache rewrite module</li>
+            <li>Custom CORS configuration for cross-origin requests</li>
+        </ul>
+
+        <br><h3 id="after-installation">After Installation:</h3>
+        <p>Access your GemaCrypt application at: <a href="http://radius.center/gemacrypt/">http://radius.center/gemacrypt/</a></p>
+        <h4>Application Components:</h4>
+        <ul>
+            <li><strong>app1.php</strong> - Main gematria calculator with Hebrew keyboard</li>
+            <li><strong>app2.php</strong> - Biblical text analyzer with multiple translations</li>
+            <li><strong>insert.php</strong> - Database operations (configured automatically)</li>
+        </ul>
+        <h4>Database Information:</h4>
+        <ul>
+            <li>Database: gematriaDB</li>
+            <li>Username: DBuser</li>
+            <li>Password: (randomly generated 16-character password)</li>
+            <li>Host: localhost</li>
+        </ul>
+
+        <br><h3 id="troubleshooting">Troubleshooting:</h3>
+        <h4>Common Issues:</h4>
+        <ul>
+            <li><strong>Permission denied:</strong> Make sure to run with sudo/root privileges</li>
+            <li><strong>MySQL connection failed:</strong> Run mysql_secure_installation to set root password</li>
+            <li><strong>Apache not starting:</strong> Check for port conflicts (port 80/443)</li>
+            <li><strong>File not found errors:</strong> Ensure proper file permissions on gemacrypt directory</li>
+        </ul>
+        <h4>Manual Configuration:</h4>
+        <p>If automatic configuration fails, you may need to manually:</p>
+        <ul>
+            <li>Edit PHP configuration files for upload limits</li>
+            <li>Configure SSL certificates for HTTPS</li>
+            <li>Set up firewall rules for web access</li>
+            <li>Import existing gematria database data</li>
+        </ul>
+
+        <br><h3 id="support">Support:</h3>
+        <p>For issues or questions about GemaCrypt functionality, visit: <a href="https://github.com/bumpper/GemaCrypt">https://github.com/bumpper/GemaCrypt</a></p>
+        <p>For a better understanding of Gematria and Hebrew encryption please see the help at <a href="http://radius.center/gemacrypt/help.html">http://radius.center/gemacrypt/help.html</a></p>
+        <p>The installation script supports automatic deployment on all major web server operating systems with intelligent OS detection and appropriate package management.</p>
+    </div>
+
+    <script>
+        function copyToClipboard(element, text) {
+            navigator.clipboard.writeText(text).then(function() {
+                element.innerHTML = '✅';
+                setTimeout(() => element.innerHTML = '📋', 1000);
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
