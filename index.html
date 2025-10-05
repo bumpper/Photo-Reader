@@ -80,20 +80,20 @@
         <header class="control-bar" role="banner">
             <h1 class="visually-hidden">Photo-Reader - PDF Slideshow Viewer</h1>
             <div class="control-group">
-                <button id="openBtn" class="btn">Open</button>
+                <button id="openBtn" class="btn" title="Select a local file to display">Open</button>
                 <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.epub,.mobi" style="display: none;">
             </div>
             
             <div class="control-group">
-                <select id="preloaded">
+                <select id="preloaded" title="Preloaded files for testing">
                     <option value="">Preloaded Files</option>
-                    <option value="./bible.txt">Bible</option>
-                    <option value="./english_dictionary.pdf">English Dictionary</option>
-                    <option value="./The_Old_Man_and_the_Sea.docx">Old Man & the Sea</option>
+                    <option value="./Bible.TXT">Bible.TXT</option>
+                    <option value="./English_Dictionary.PDF">English_Dictionary.PDF</option>
+                    <option value="./Old_Man_&_the_Sea.DOCX">Old_Man_&_the_Sea.DOCX</option>
                 </select>
             </div>
             
-            <div class="control-group">
+            <div class="control-group" title="Number of Pages to display at once">
                 <label for="pageView">Pages:</label>
                 <select id="pageView">
                     <option value="1">1</option>
@@ -104,51 +104,75 @@
             
             
             <div class="control-group">
-                <button id="prevBtn" class="btn nav-btn" disabled title="Previous Page">◀</button>
-                <button id="nextBtn" class="btn nav-btn" disabled title="Next Page">▶</button>
+                <button id="prevBtn" class="btn nav-btn" disabled title="Go Back 1 Page">◀</button>
+                <button id="nextBtn" class="btn nav-btn" disabled title="Go Forward 1 Page">▶</button>
             </div>
             
-            <div class="control-group">
+            <div class="control-group" title="Page Range to use (or word range for TXT files)">
                 <label for="startPage">Start:</label>
                 <input type="number" id="startPage" min="1" value="1" class="page-input">
             </div>
             
-            <div class="control-group">
+            <div class="control-group" title="Page Range to use (or word range for TXT files)">
                 <label for="endPage">End:</label>
                 <input type="number" id="endPage" min="1" value="1" class="page-input">
             </div>
             
             <div class="control-group">
-                <label>
+                <label title="Reverse Order">
+                    <input type="checkbox" id="reverseOrder"> ⏪
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label title="Rotate Content by 180°">
+                    <input type="checkbox" id="rotateContent"> 🔄
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label title="Mirror Content">
+                    <input type="checkbox" id="mirrorContent"> 🪞
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label title="Vertical Guide for Speed Reading each line">
+                    <input type="checkbox" id="verticalGuide"> <span style="color: white;">|</span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label title="Place a centered focal point on-screen">
                     <input type="checkbox" id="centerDot"> <span class="icon-center-dot"></span>
                 </label>
             </div>
             
             <div class="control-group">
-                <label>
+                <label title="Corner Points to defocus gaze">
                     <input type="checkbox" id="cornerCircles"> <span class="icon-corner-circles"></span>
                 </label>
             </div>
             
-            <div class="control-group">
+            <div class="control-group" title="Rate of change">
                 <label for="interval">Interval:</label>
                 <input type="number" id="interval" min="0.00" max="60.00" step="0.01" value="0.20" class="interval-input">
             </div>
             
             <div class="control-group">
-                <label>
+                <label title="Tone Frequency to assist in reaching desired Brain wave state">
                     <input type="checkbox" id="audioEnabled"> 🔊
                 </label>
-                <input type="number" id="audioFrequency" min="0.00" max="60.00" step="0.01" value="4.00" class="audio-frequency-input">
-                <label for="audioFrequency">Hz</label>
+                <input type="number" id="audioFrequency" min="0.00" max="60.00" step="0.01" value="4.00" class="audio-frequency-input" title="Tone Frequency">
+                <label for="audioFrequency" title="Tone Frequency">Hz</label>
             </div>
             
             <div class="control-group">
-                <button id="playBtn" class="btn" disabled>Play</button>
+                <button id="playBtn" class="btn" disabled title="Play Slideshow">Play</button>
             </div>
             
             <div class="control-group help-btn-group">
-                <a href="help.html" class="btn help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>
+                <a href="help.html" class="btn help-btn" title="Help" aria-label="Help Documentation">?</a>
             </div>
         </header>
         

@@ -4,6 +4,7 @@ class PhotoReader {
         this.currentPage = 1;
         this.totalPages = 0;
         this.isPlaying = false;
+        this.isPaused = false;
         this.slideInterval = null;
         this.audioContext = null;
         this.oscillator = null;
@@ -29,10 +30,14 @@ class PhotoReader {
         this.pageView = document.getElementById('pageView');
         this.centerDot = document.getElementById('centerDot');
         this.cornerCircles = document.getElementById('cornerCircles');
+        this.verticalGuide = document.getElementById('verticalGuide');
         this.prevBtn = document.getElementById('prevBtn');
         this.nextBtn = document.getElementById('nextBtn');
         this.startPage = document.getElementById('startPage');
         this.endPage = document.getElementById('endPage');
+        this.reverseOrder = document.getElementById('reverseOrder');
+        this.rotateContent = document.getElementById('rotateContent');
+        this.mirrorContent = document.getElementById('mirrorContent');
         this.interval = document.getElementById('interval');
         this.audioEnabled = document.getElementById('audioEnabled');
         this.audioFrequency = document.getElementById('audioFrequency');
@@ -60,6 +65,19 @@ class PhotoReader {
             this.saveSettings();
             this.updateOverlay();
         });
+        this.verticalGuide.addEventListener('change', () => {
+            this.saveSettings();
+            this.updateOverlay();
+        });
+        this.reverseOrder.addEventListener('change', () => this.saveSettings());
+        this.rotateContent.addEventListener('change', () => {
+            this.saveSettings();
+            this.updateDisplay();
+        });
+        this.mirrorContent.addEventListener('change', () => {
+            this.saveSettings();
+            this.updateDisplay();
+        });
         this.prevBtn.addEventListener('click', () => this.previousPage());
         this.nextBtn.addEventListener('click', () => this.nextPage());
         this.startPage.addEventListener('change', () => this.validatePageRange());
@@ -77,6 +95,10 @@ class PhotoReader {
         
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeydown(e));
+        
+        // Mouse events for fullscreen navigation
+        this.pdfDisplay.addEventListener('mousedown', (e) => this.handleMouseClick(e));
+        this.pdfDisplay.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
         
         // Fullscreen change events
         document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
@@ -98,6 +120,10 @@ class PhotoReader {
             pageView: this.pageView.value,
             centerDot: this.centerDot.checked,
             cornerCircles: this.cornerCircles.checked,
+            verticalGuide: this.verticalGuide.checked,
+            reverseOrder: this.reverseOrder.checked,
+            rotateContent: this.rotateContent.checked,
+            mirrorContent: this.mirrorContent.checked,
             interval: this.interval.value,
             audioEnabled: this.audioEnabled.checked,
             audioFrequency: this.audioFrequency.value
@@ -120,6 +146,18 @@ class PhotoReader {
                 }
                 if (settings.cornerCircles !== undefined) {
                     this.cornerCircles.checked = settings.cornerCircles;
+                }
+                if (settings.verticalGuide !== undefined) {
+                    this.verticalGuide.checked = settings.verticalGuide;
+                }
+                if (settings.reverseOrder !== undefined) {
+                    this.reverseOrder.checked = settings.reverseOrder;
+                }
+                if (settings.rotateContent !== undefined) {
+                    this.rotateContent.checked = settings.rotateContent;
+                }
+                if (settings.mirrorContent !== undefined) {
+                    this.mirrorContent.checked = settings.mirrorContent;
                 }
                 if (settings.interval) {
                     this.interval.value = settings.interval;
@@ -651,6 +689,18 @@ class PhotoReader {
         documentPreview.className = 'document-preview';
         documentPreview.innerHTML = pageContent;
         
+        // Apply transformations
+        let transforms = [];
+        if (this.rotateContent.checked) {
+            transforms.push('rotate(180deg)');
+        }
+        if (this.mirrorContent.checked) {
+            transforms.push('scaleX(-1)');
+        }
+        if (transforms.length > 0) {
+            documentPreview.style.transform = transforms.join(' ');
+        }
+        
         documentPageDiv.appendChild(documentPreview);
         this.pdfDisplay.appendChild(documentPageDiv);
         
@@ -701,6 +751,18 @@ class PhotoReader {
         const textPreview = document.createElement('div');
         textPreview.className = 'text-preview';
         textPreview.textContent = this.textContent;
+        
+        // Apply transformations
+        let transforms = [];
+        if (this.rotateContent.checked) {
+            transforms.push('rotate(180deg)');
+        }
+        if (this.mirrorContent.checked) {
+            transforms.push('scaleX(-1)');
+        }
+        if (transforms.length > 0) {
+            textPreview.style.transform = transforms.join(' ');
+        }
         
         textDisplay.appendChild(textPreview);
         this.pdfDisplay.appendChild(textDisplay);
@@ -775,6 +837,18 @@ class PhotoReader {
         documentPreview.className = 'document-preview';
         documentPreview.innerHTML = pageContent;
         
+        // Apply transformations
+        let transforms = [];
+        if (this.rotateContent.checked) {
+            transforms.push('rotate(180deg)');
+        }
+        if (this.mirrorContent.checked) {
+            transforms.push('scaleX(-1)');
+        }
+        if (transforms.length > 0) {
+            documentPreview.style.transform = transforms.join(' ');
+        }
+        
         documentPageDiv.appendChild(documentPreview);
         this.pdfDisplay.appendChild(documentPageDiv);
         
@@ -819,6 +893,18 @@ class PhotoReader {
             
             await page.render(renderContext).promise;
             
+            // Apply transformations
+            let transforms = [];
+            if (this.rotateContent.checked) {
+                transforms.push('rotate(180deg)');
+            }
+            if (this.mirrorContent.checked) {
+                transforms.push('scaleX(-1)');
+            }
+            if (transforms.length > 0) {
+                canvas.style.transform = transforms.join(' ');
+            }
+            
             // Create page container
             const pageDiv = document.createElement('div');
             pageDiv.className = 'pdf-page';
@@ -836,6 +922,53 @@ class PhotoReader {
         
         // Support overlay for PDF files
         if (this.pdfDoc) {
+            // Vertical guide line for PDFs - create one line per page
+            if (this.verticalGuide.checked) {
+                const viewMode = parseInt(this.pageView.value);
+                const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
+                
+                if (viewMode === 1) {
+                    // Single page - one centered line
+                    const verticalLine = document.createElement('div');
+                    verticalLine.className = 'vertical-guide';
+                    verticalLine.style.cssText = `
+                        position: absolute;
+                        left: 50%;
+                        top: 0;
+                        width: 1px;
+                        height: 100%;
+                        background-color: #cccccc;
+                        transform: translateX(-50%);
+                        pointer-events: none;
+                        z-index: 10;
+                    `;
+                    this.overlay.appendChild(verticalLine);
+                } else {
+                    // Multiple pages - create a line for each page
+                    pages.forEach((page) => {
+                        const pageRect = page.getBoundingClientRect();
+                        const containerRect = this.pdfContainer.getBoundingClientRect();
+                        
+                        const relativeLeft = pageRect.left - containerRect.left;
+                        const relativeTop = pageRect.top - containerRect.top;
+                        const pageCenterX = relativeLeft + (pageRect.width / 2);
+                        
+                        const verticalLine = document.createElement('div');
+                        verticalLine.className = 'vertical-guide';
+                        verticalLine.style.cssText = `
+                            position: absolute;
+                            left: ${pageCenterX}px;
+                            top: ${relativeTop}px;
+                            width: 1px;
+                            height: ${pageRect.height}px;
+                            background-color: #cccccc;
+                            pointer-events: none;
+                            z-index: 10;
+                        `;
+                        this.overlay.appendChild(verticalLine);
+                    });
+                }
+            }
             const containerRect = this.pdfContainer.getBoundingClientRect();
             const displayRect = this.pdfDisplay.getBoundingClientRect();
             
@@ -885,6 +1018,24 @@ class PhotoReader {
         }
         // Support overlay for text files and document files
         else if (this.currentFileType === 'txt' || this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Vertical guide line for text/document files - single centered line
+            if (this.verticalGuide.checked) {
+                const verticalLine = document.createElement('div');
+                verticalLine.className = 'vertical-guide';
+                verticalLine.style.cssText = `
+                    position: absolute;
+                    left: 50%;
+                    top: 0;
+                    width: 1px;
+                    height: 100%;
+                    background-color: #cccccc;
+                    transform: translateX(-50%);
+                    pointer-events: none;
+                    z-index: 10;
+                `;
+                this.overlay.appendChild(verticalLine);
+            }
+            
             // Center dot
             if (this.centerDot.checked) {
                 const centerDot = document.createElement('div');
@@ -990,9 +1141,14 @@ class PhotoReader {
         }
         
         if (this.currentFileType === 'txt') {
-            // Text mode only: start from first word or specified start position
-            const startWord = parseInt(this.startPage.value) - 1;
-            this.currentWordIndex = Math.max(0, startWord);
+            // Text mode: start from end if reverse mode, otherwise start
+            if (this.reverseOrder.checked) {
+                const endWord = parseInt(this.endPage.value) - 1;
+                this.currentWordIndex = Math.max(0, endWord);
+            } else {
+                const startWord = parseInt(this.startPage.value) - 1;
+                this.currentWordIndex = Math.max(0, startWord);
+            }
             await this.displayCurrentWord();
             
             // Start word progression timer
@@ -1001,8 +1157,12 @@ class PhotoReader {
                 this.nextTextWord();
             }, intervalMs);
         } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
-            // Document mode: page-by-page slideshow like PDFs
-            this.currentPage = parseInt(this.startPage.value);
+            // Document mode: start from end if reverse mode, otherwise start
+            if (this.reverseOrder.checked) {
+                this.currentPage = parseInt(this.endPage.value);
+            } else {
+                this.currentPage = parseInt(this.startPage.value);
+            }
             await this.updateDisplay();
             
             // Start slideshow timer for documents
@@ -1011,8 +1171,12 @@ class PhotoReader {
                 this.nextDocumentSlide();
             }, intervalMs);
         } else {
-            // PDF mode: existing logic
-            this.currentPage = parseInt(this.startPage.value);
+            // PDF mode: start from end if reverse mode, otherwise start
+            if (this.reverseOrder.checked) {
+                this.currentPage = parseInt(this.endPage.value);
+            } else {
+                this.currentPage = parseInt(this.startPage.value);
+            }
             await this.updateDisplay();
             
             // Start slideshow timer
@@ -1025,6 +1189,7 @@ class PhotoReader {
     
     stopSlideshow() {
         this.isPlaying = false;
+        this.isPaused = false;
         this.playBtn.textContent = 'Play';
         
         // Clear interval
@@ -1038,6 +1203,41 @@ class PhotoReader {
         
         // Exit fullscreen
         this.exitFullscreen();
+    }
+    
+    pauseSlideshow() {
+        if (!this.isPlaying || this.isPaused) return;
+        
+        this.isPaused = true;
+        
+        // Clear the interval timer but stay in fullscreen
+        if (this.slideInterval) {
+            clearInterval(this.slideInterval);
+            this.slideInterval = null;
+        }
+    }
+    
+    resumeSlideshow() {
+        if (!this.isPlaying || !this.isPaused) return;
+        
+        this.isPaused = false;
+        
+        // Restart the interval timer based on file type
+        const intervalMs = parseFloat(this.interval.value) * 1000;
+        
+        if (this.currentFileType === 'txt') {
+            this.slideInterval = setInterval(() => {
+                this.nextTextWord();
+            }, intervalMs);
+        } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            this.slideInterval = setInterval(() => {
+                this.nextDocumentSlide();
+            }, intervalMs);
+        } else {
+            this.slideInterval = setInterval(() => {
+                this.nextSlide();
+            }, intervalMs);
+        }
     }
     
     async displayCurrentWord() {
@@ -1054,6 +1254,18 @@ class PhotoReader {
         wordDisplay.className = 'word-display';
         wordDisplay.textContent = word;
         
+        // Apply transformations
+        let transforms = [];
+        if (this.rotateContent.checked) {
+            transforms.push('rotate(180deg)');
+        }
+        if (this.mirrorContent.checked) {
+            transforms.push('scaleX(-1)');
+        }
+        if (transforms.length > 0) {
+            wordDisplay.style.transform = transforms.join(' ');
+        }
+        
         this.pdfDisplay.appendChild(wordDisplay);
         
         // Update overlay to show center dot and corner circles for text files
@@ -1064,9 +1276,18 @@ class PhotoReader {
         const startWord = parseInt(this.startPage.value) - 1;
         const endWord = parseInt(this.endPage.value) - 1;
         
-        this.currentWordIndex++;
-        if (this.currentWordIndex > endWord) {
-            this.currentWordIndex = startWord;
+        if (this.reverseOrder.checked) {
+            // Reverse mode: go backwards
+            this.currentWordIndex--;
+            if (this.currentWordIndex < startWord) {
+                this.currentWordIndex = endWord; // Loop back to end
+            }
+        } else {
+            // Normal mode: go forwards
+            this.currentWordIndex++;
+            if (this.currentWordIndex > endWord) {
+                this.currentWordIndex = startWord;
+            }
         }
         
         await this.displayCurrentWord();
@@ -1077,9 +1298,18 @@ class PhotoReader {
         const endPage = parseInt(this.endPage.value);
         const viewMode = parseInt(this.pageView.value);
         
-        this.currentPage += viewMode;
-        if (this.currentPage > endPage) {
-            this.currentPage = startPage;
+        if (this.reverseOrder.checked) {
+            // Reverse mode: go backwards
+            this.currentPage -= viewMode;
+            if (this.currentPage < startPage) {
+                this.currentPage = endPage; // Loop back to end
+            }
+        } else {
+            // Normal mode: go forwards
+            this.currentPage += viewMode;
+            if (this.currentPage > endPage) {
+                this.currentPage = startPage;
+            }
         }
         
         await this.updateDisplay();
@@ -1089,9 +1319,18 @@ class PhotoReader {
         const startPage = parseInt(this.startPage.value);
         const endPage = parseInt(this.endPage.value);
         
-        this.currentPage++;
-        if (this.currentPage > endPage) {
-            this.currentPage = startPage; // Loop back to start
+        if (this.reverseOrder.checked) {
+            // Reverse mode: go backwards
+            this.currentPage--;
+            if (this.currentPage < startPage) {
+                this.currentPage = endPage; // Loop back to end
+            }
+        } else {
+            // Normal mode: go forwards
+            this.currentPage++;
+            if (this.currentPage > endPage) {
+                this.currentPage = startPage; // Loop back to start
+            }
         }
         
         await this.updateDisplay();
@@ -1174,9 +1413,178 @@ class PhotoReader {
     }
     
     handleKeydown(event) {
+        // Handle Escape key
         if (event.key === 'Escape' && this.isPlaying) {
             event.preventDefault();
             this.stopSlideshow();
+            return;
+        }
+        
+        // Check if we're in fullscreen/playing mode
+        if (this.isPlaying) {
+            // Handle Pause/Break key - toggle pause/resume
+            // Check multiple ways the Pause key might be detected
+            const isPauseKey = event.key === 'Pause' || 
+                             event.key === 'Break' || 
+                             event.code === 'Pause' || 
+                             event.code === 'Break' ||
+                             event.keyCode === 19; // Pause/Break keyCode
+            
+            if (isPauseKey) {
+                event.preventDefault();
+                if (this.isPaused) {
+                    this.resumeSlideshow();
+                } else {
+                    this.pauseSlideshow();
+                }
+                return;
+            }
+            
+            // Handle Enter key - resume if paused
+            if (event.key === 'Enter' && this.isPaused) {
+                event.preventDefault();
+                this.resumeSlideshow();
+                return;
+            }
+            
+            // Fullscreen mode navigation
+            switch(event.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    event.preventDefault();
+                    this.goBackInFullscreen();
+                    break;
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case ' ': // Spacebar
+                    event.preventDefault();
+                    this.advanceToNextInterval();
+                    break;
+            }
+        } else {
+            // Normal mode - trigger toolbar buttons
+            switch(event.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if (!this.prevBtn.disabled) {
+                        this.previousPage();
+                    }
+                    break;
+                case 'ArrowRight':
+                case 'ArrowDown':
+                    event.preventDefault();
+                    if (!this.nextBtn.disabled) {
+                        this.nextPage();
+                    }
+                    break;
+            }
+        }
+    }
+    
+    handleMouseClick(event) {
+        // Only handle mouse clicks in fullscreen mode
+        if (!this.isPlaying) return;
+        
+        event.preventDefault();
+        
+        // Left mouse button (button 0)
+        if (event.button === 0) {
+            this.goBackInFullscreen();
+        }
+        // Right mouse button (button 2)
+        else if (event.button === 2) {
+            this.advanceToNextInterval();
+        }
+    }
+    
+    handleContextMenu(event) {
+        // Prevent context menu in fullscreen mode
+        if (this.isPlaying) {
+            event.preventDefault();
+        }
+    }
+    
+    goBackInFullscreen() {
+        // Navigate back one page or word depending on file type
+        // Loop to end if at the beginning
+        
+        if (this.currentFileType === 'txt') {
+            // Go back one word, loop to end if at start
+            const startWord = parseInt(this.startPage.value) - 1;
+            const endWord = parseInt(this.endPage.value) - 1;
+            this.currentWordIndex--;
+            if (this.currentWordIndex < startWord) {
+                this.currentWordIndex = endWord; // Loop to end
+            }
+            this.displayCurrentWord();
+        } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            // Go back one page for documents, loop to end if at start
+            const startPage = parseInt(this.startPage.value);
+            const endPage = parseInt(this.endPage.value);
+            this.currentPage--;
+            if (this.currentPage < startPage) {
+                this.currentPage = endPage; // Loop to end
+            }
+            this.updateDisplay();
+        } else if (this.pdfDoc) {
+            // Go back by viewMode pages for PDFs, loop to end if at start
+            const startPage = parseInt(this.startPage.value);
+            const endPage = parseInt(this.endPage.value);
+            const viewMode = parseInt(this.pageView.value);
+            this.currentPage -= viewMode;
+            if (this.currentPage < startPage) {
+                this.currentPage = endPage; // Loop to end
+            }
+            this.updateDisplay();
+        }
+    }
+    
+    advanceToNextInterval() {
+        // Immediately trigger the next interval progression
+        // If reverseOrder is enabled in fullscreen, go forward chronologically and loop to start at end
+        const isReverse = this.reverseOrder.checked;
+        
+        if (this.currentFileType === 'txt') {
+            if (isReverse) {
+                // In reverse mode, advance chronologically forward and loop to start at end
+                const startWord = parseInt(this.startPage.value) - 1;
+                const endWord = parseInt(this.endPage.value) - 1;
+                this.currentWordIndex++;
+                if (this.currentWordIndex > endWord) {
+                    this.currentWordIndex = startWord; // Loop to start
+                }
+                this.displayCurrentWord();
+            } else {
+                this.nextTextWord();
+            }
+        } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
+            if (isReverse) {
+                // In reverse mode, advance chronologically forward and loop to start at end
+                const startPage = parseInt(this.startPage.value);
+                const endPage = parseInt(this.endPage.value);
+                this.currentPage++;
+                if (this.currentPage > endPage) {
+                    this.currentPage = startPage; // Loop to start
+                }
+                this.updateDisplay();
+            } else {
+                this.nextDocumentSlide();
+            }
+        } else if (this.pdfDoc) {
+            if (isReverse) {
+                // In reverse mode, advance chronologically forward by viewMode pages and loop to start at end
+                const startPage = parseInt(this.startPage.value);
+                const endPage = parseInt(this.endPage.value);
+                const viewMode = parseInt(this.pageView.value);
+                this.currentPage += viewMode;
+                if (this.currentPage > endPage) {
+                    this.currentPage = startPage; // Loop to start
+                }
+                this.updateDisplay();
+            } else {
+                this.nextSlide();
+            }
         }
     }
     
