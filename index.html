@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Frame-busting script - prevents page from being loaded in frames -->
+    <script>
+        // Immediate frame-busting check
+        if (window.top !== window.self) {
+            try {
+                // Attempt to break out of the frame
+                window.top.location = window.self.location;
+            } catch (e) {
+                // If blocked by cross-origin policy, use alternative method
+                document.write('<style>body{display:none !important;}</style>');
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.innerHTML = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;"><div style="text-align:center;"><h1>Security Notice</h1><p>This page cannot be displayed in a frame.</p><p><a href="' + window.location.href + '" target="_top" style="color:#0066cc;text-decoration:underline;">Click here to open in a new window</a></p></div></div>';
+                });
+            }
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
