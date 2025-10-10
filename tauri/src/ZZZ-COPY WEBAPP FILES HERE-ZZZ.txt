@@ -1,0 +1,1 @@
+Copy your webapp directory into this folder.
