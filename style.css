@@ -84,6 +84,13 @@ select, input[type="number"] {
     font-size: 14px;
 }
 
+select:disabled, input[type="number"]:disabled {
+    background-color: #f5f5f5;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #d6d6d6;
+}
+
 .page-input {
     width: 80px;
 }
@@ -100,21 +107,64 @@ input[type="checkbox"] {
     margin-right: 5px;
 }
 
+/* Larger grey pipe for vertical guide */
+.control-group label span[style*="color: white"] {
+    font-size: 28px; /* Make the grey pipe larger */
+}
+
+/* Ensure vertical guide is visible in all modes */
+.vertical-guide {
+    background-color: #cccccc !important;
+    width: 2px !important; /* Make slightly thicker for better visibility */
+    opacity: 0.8;
+}
+
+/* Larger emojis while keeping text the same size */
+.control-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Target specific emojis and make them larger */
+.control-group label:has(input[type="checkbox"]) {
+    font-size: 28px; /* Make emojis larger */
+}
+
+/* Keep the text elements at normal size */
+.control-group label:has(input[type="checkbox"]) input[type="checkbox"] {
+    font-size: 14px; /* Keep checkbox normal */
+}
+
+/* Reset font-size for labels that contain actual text (not just emojis) */
+.control-group label:has(input[type="number"]),
+.control-group label[for] {
+    font-size: 14px; /* Keep text labels normal size */
+}
+
 /* Icon styles */
 .icon-center-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 24px; /* Increased from 8px to add space around */
+    height: 24px; /* Increased from 8px to add space around */
     background-color: red;
     border-radius: 50%;
     vertical-align: middle;
     margin-left: 1px;
+    /* Use background-clip to keep the actual dot the same size */
+    background-clip: content-box;
+    padding: 8px; /* This creates the space around the dot */
+    background-size: 8px 8px; /* Keep the actual dot 8px */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: radial-gradient(circle, red 50%, transparent 50%);
+    background-color: transparent;
 }
 
 .icon-corner-circles {
     display: inline-block;
-    width: 12px;
-    height: 12px;
+    width: 24px; /* Increased from 12px to add more space */
+    height: 24px; /* Increased from 12px to add more space */
     position: relative;
     vertical-align: middle;
     margin-left: 1px;
@@ -124,8 +174,8 @@ input[type="checkbox"] {
 .icon-corner-circles::after {
     content: '';
     position: absolute;
-    width: 4px;
-    height: 4px;
+    width: 4px; /* Keep circles the same size */
+    height: 4px; /* Keep circles the same size */
     background-color: red;
     border-radius: 50%;
 }
@@ -133,7 +183,8 @@ input[type="checkbox"] {
 .icon-corner-circles::before {
     top: 0;
     left: 0;
-    box-shadow: 8px 0 0 red, 0 8px 0 red, 8px 8px 0 red;
+    /* Increased spacing from 8px to 20px between circles */
+    box-shadow: 20px 0 0 red, 0 20px 0 red, 20px 20px 0 red;
 }
 
 
@@ -242,15 +293,58 @@ input[type="checkbox"] {
     height: 100%;
     pointer-events: none;
     z-index: 100;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Override any aria-hidden styling */
+.overlay[aria-hidden="true"] {
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Ensure overlay works properly in fullscreen mode */
+:fullscreen .overlay,
+:-webkit-full-screen .overlay,
+:-moz-full-screen .overlay,
+:-ms-fullscreen .overlay,
+.container.fullscreen .overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483647 !important; /* Maximum z-index for fullscreen */
+    pointer-events: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+}
+
+/* Make sure overlay elements are visible in fullscreen */
+.container.fullscreen .overlay .dot,
+.container.fullscreen .overlay .vertical-guide {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure dots and lines have proper contrast in fullscreen */
+.container.fullscreen .overlay .dot {
+    background-color: red !important;
+}
+
+.container.fullscreen .overlay .vertical-guide {
+    background-color: #888 !important;
 }
 
 .dot {
     position: absolute;
-    width: 5px;
-    height: 5px;
+    width: 8px;
+    height: 8px;
     background-color: red;
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    opacity: 0.8;
 }
 
 .corner-dot {
@@ -497,6 +591,31 @@ input[type="checkbox"] {
     font-size: 144px;
 }
 
+.line-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    color: #fff;
+    font-size: 48px;
+    font-family: "Times New Roman", serif;
+    font-weight: bold;
+    text-align: left;
+    padding: 20px;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.fullscreen .line-display {
+    width: 100vw;
+    height: 100vh;
+    font-size: 48px;
+}
+
 /* Loading indicator */
 .loading {
     color: white;
@@ -546,4 +665,215 @@ input[type="checkbox"] {
     animation-delay: 0s !important;
     transition-duration: 0s !important;
     transition-delay: 0s !important;
+}
+
+/* Image display styles */
+.image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+.image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    border: none;
+    outline: none;
+}
+
+/* Multi-image layouts for 2-page and 3-page display */
+.pdf-display.two-pages .image-container.multi-image {
+    width: 50%;
+    height: 100%;
+    float: left;
+    border-right: 1px solid #000;
+}
+
+.pdf-display.two-pages .image-container.multi-image.right {
+    border-right: none;
+}
+
+.pdf-display.three-pages .image-container.multi-image {
+    width: 33.33%;
+    height: 100%;
+    float: left;
+    border-right: 1px solid #000;
+}
+
+.pdf-display.three-pages .image-container.multi-image.right {
+    border-right: none;
+}
+
+/* Ensure proper clearfix for floating elements */
+.pdf-display.two-pages::after,
+.pdf-display.three-pages::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Fullscreen image display */
+.fullscreen .image-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: #000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.fullscreen .image-container img {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+/* Fullscreen multi-image layouts */
+.fullscreen .pdf-display.two-pages .image-container.multi-image {
+    position: fixed !important;
+    width: 50vw !important;
+    height: 100vh !important;
+    top: 0 !important;
+    z-index: 9999 !important;
+    background: #000 !important;
+    border-right: 2px solid #000;
+}
+
+.fullscreen .pdf-display.two-pages .image-container.multi-image.left {
+    left: 0 !important;
+}
+
+.fullscreen .pdf-display.two-pages .image-container.multi-image.right {
+    left: 50vw !important;
+    border-right: none;
+}
+
+.fullscreen .pdf-display.three-pages .image-container.multi-image {
+    position: fixed !important;
+    width: 33.33vw !important;
+    height: 100vh !important;
+    top: 0 !important;
+    z-index: 9999 !important;
+    background: #000 !important;
+    border-right: 2px solid #000;
+}
+
+.fullscreen .pdf-display.three-pages .image-container.multi-image.left {
+    left: 0 !important;
+}
+
+.fullscreen .pdf-display.three-pages .image-container.multi-image.center {
+    left: 33.33vw !important;
+}
+
+.fullscreen .pdf-display.three-pages .image-container.multi-image.right {
+    left: 66.66vw !important;
+    border-right: none;
+}
+
+.fullscreen .pdf-display.two-pages .image-container.multi-image img,
+.fullscreen .pdf-display.three-pages .image-container.multi-image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+/* Drag and drop area */
+.drag-drop-area {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    text-align: center;
+    border: 4px dashed #4CAF50;
+    transition: all 0.3s ease;
+}
+
+.drag-drop-area.drag-over {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #8BC34A;
+}
+
+.drag-drop-content {
+    text-align: center;
+    color: white;
+}
+
+.drag-drop-content h3 {
+    margin: 0 0 20px 0;
+    font-size: 32px;
+    color: white;
+}
+
+.drag-drop-content p {
+    margin: 10px 0;
+    font-size: 18px;
+    opacity: 0.9;
+}
+
+.drag-drop-content p {
+    margin: 5px 0;
+}
+
+.drag-drop-content small {
+    color: #888;
+}
+
+.drag-drop-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+.drag-drop-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+.drag-drop-close:active {
+    transform: scale(0.95);
 }

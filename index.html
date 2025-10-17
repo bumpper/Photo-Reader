@@ -21,29 +21,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Meta Tags -->
-    <title>Photo-Reader - Advanced PDF & Text Slideshow Viewer | Multi-Page PDF & Word Display Tool</title>
-    <meta name="description" content="Photo-Reader is a powerful web-based PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, customizable timing, and visual overlays. Perfect for presentations, document review, speed reading, and file navigation.">
-    <meta name="keywords" content="PDF viewer, PDF slideshow, text viewer, word display, speed reading, document viewer, presentation tool, multi-page PDF, fullscreen PDF, PDF navigation, document slideshow, PDF reader, text reader, web PDF viewer">
+    <title>Photo-Reader - Advanced PDF, Text & Image Slideshow Viewer | Multi-Page Display & Image Gallery Tool</title>
+    <meta name="description" content="Photo-Reader is a powerful web-based PDF, text, and image slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, image gallery support, customizable timing, and visual overlays. Perfect for presentations, document review, image slideshows, speed reading, and file navigation.">
+    <meta name="keywords" content="PDF viewer, PDF slideshow, text viewer, image viewer, image slideshow, word display, speed reading, document viewer, presentation tool, multi-page PDF, fullscreen PDF, PDF navigation, document slideshow, PDF reader, text reader, image gallery, web PDF viewer, photo slideshow, WebP, JPG, PNG, GIF, SVG viewer">
     <meta name="author" content="Photo-Reader">
     <meta name="robots" content="index, follow">
     
     <!-- Open Graph Meta Tags for Social Media -->
-    <meta property="og:title" content="Photo-Reader - Advanced PDF & Text Slideshow Viewer">
-    <meta property="og:description" content="Powerful web-based PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, and customizable timing controls.">
+    <meta property="og:title" content="Photo-Reader - Advanced PDF, Text & Image Slideshow Viewer">
+    <meta property="og:description" content="Powerful web-based PDF, text, and image slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, image gallery support, and customizable timing controls.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://radius.center/photo-reader/">
     <meta property="og:site_name" content="Photo-Reader">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Photo-Reader - Advanced PDF & Text Slideshow Viewer">
-    <meta name="twitter:description" content="Powerful web-based PDF and text slideshow viewer with multi-page display, word-by-word text display, and fullscreen presentation mode.">
+    <meta name="twitter:title" content="Photo-Reader - Advanced PDF, Text & Image Slideshow Viewer">
+    <meta name="twitter:description" content="Powerful web-based PDF, text, and image slideshow viewer with multi-page display, word-by-word text display, image gallery support, and fullscreen presentation mode.">
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://radius.center/photo-reader/">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.png">
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
@@ -63,7 +63,7 @@
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "Photo-Reader",
-        "description": "Advanced PDF and text slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, and customizable timing controls.",
+        "description": "Advanced PDF, text, and image slideshow viewer with multi-page display, fullscreen presentation mode, word-by-word text display, image gallery support, and customizable timing controls.",
         "url": "https://radius.center/photo-reader/",
         "applicationCategory": "DocumentViewer",
         "operatingSystem": "Web Browser",
@@ -75,6 +75,8 @@
         "featureList": [
             "PDF slideshow presentation",
             "Text file word-by-word display",
+            "Image gallery and slideshow (WebP, JPG, PNG, GIF, SVG)",
+            "Folder-based image viewing",
             "Multi-page viewing (1, 2, or 3 pages)",
             "Fullscreen presentation mode",
             "Customizable timing intervals",
@@ -82,7 +84,8 @@
             "Audio tone generation",
             "Keyboard controls",
             "Scrollable PDF preview",
-            "Speed reading support"
+            "Speed reading support",
+            "Image transform controls (rotation, mirroring)"
         ]
     }
     </script>
@@ -97,16 +100,31 @@
             <h1 class="visually-hidden">Photo-Reader - PDF Slideshow Viewer</h1>
             <div class="control-group">
                 <button id="openBtn" class="btn" title="Select a local file to display">Open</button>
-                <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.epub,.mobi" style="display: none;">
+                <button id="openFolderBtn" class="btn" title="Drag and drop images or select a folder containing images">Images</button>
+                <button id="photoDirectoryBtn" class="btn" title="Select a folder of images" style="display: none;">Select Image Folder</button>
+                <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.epub,.mobi,.webp,.jpg,.jpeg,.png,.gif,.svg" style="display: none;">
+                <input type="file" id="folderInput" webkitdirectory style="display: none;">
             </div>
             
             <div class="control-group">
                 <select id="preloaded" title="Preloaded files for testing">
                     <option value="">Preloaded Files</option>
+                    <option value=""></option>
+                    <option value="">+Add Document</option>
+                    <option value="photo-directory">+Add Photos</option>
+                    <option value="photo-directory-folder">+Add Photo Directory</option>
+                    <option value=""></option>
+                    <option value="./Affirmations.TXT">Affirmations.TXT</option>
+                    <!--<option value="./Assumptions.TXT">Assumptions.TXT</option>-->
                     <option value="./Bible.TXT">Bible.TXT</option>
                     <option value="./English_Dictionary.PDF">English_Dictionary.PDF</option>
                     <option value="./Old_Man_&_the_Sea.DOCX">Old_Man_&_the_Sea.DOCX</option>
+                    <option value="vision-board">Vision Board</option>
                 </select>
+            </div>
+            
+            <div class="control-group" title="Toggle between word-by-word and line-by-line display for text files">
+                <button id="displayModeBtn" class="btn" title="Toggle Word/Line mode">Word</button>
             </div>
             
             <div class="control-group" title="Number of Pages to display at once">
@@ -132,6 +150,12 @@
             <div class="control-group" title="Page Range to use (or word range for TXT files)">
                 <label for="endPage">End:</label>
                 <input type="number" id="endPage" min="1" value="1" class="page-input">
+            </div>
+            
+            <div class="control-group">
+                <label title="Randomized Order">
+                    <input type="checkbox" id="randomizedOrder"> 🎲
+                </label>
             </div>
             
             <div class="control-group">
@@ -193,9 +217,17 @@
         </header>
         
         <!-- Main content area -->
-        <main id="main-content" class="pdf-container" role="main" aria-label="PDF Display Area">
+        <main id="main-content" class="pdf-container" role="main" aria-label="Content Display Area">
             <div class="pdf-display" id="pdfDisplay">
-                <div class="no-pdf" role="status" aria-live="polite">Load a PDF, TXT, or DOCX file to begin</div>
+                <div class="no-pdf" role="status" aria-live="polite">Load a PDF, TXT, DOCX, or image file to begin</div>
+                <div id="dragDropArea" class="drag-drop-area" style="display: none;">
+                    <button class="drag-drop-close" id="dragDropClose" title="Close drag and drop area">&times;</button>
+                    <div class="drag-drop-content">
+                        <h3>📁 Drag & Drop Image Folder</h3>
+                        <p>Drop multiple image files here or use the folder picker above</p>
+                        <small>Supports: JPG, PNG, GIF, WebP, SVG</small>
+                    </div>
+                </div>
             </div>
             
             <!-- Overlay for dots and circles -->

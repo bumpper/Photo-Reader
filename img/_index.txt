@@ -1,0 +1,98 @@
+Image Directory Contents 
+======================== 
+ 
+This directory contains vision board images for the Photo-Reader application. 
+ 
+Generated: 10/17/2025 00:33:45 
+ 
+Directory Summary: 
+----------------- 
+📁 Location: ./img/ 
+📊 Total files: 50 
+🔄 Last updated: 10/17/2025 00:33:45 
+ 
+File Types Summary: 
+------------------ 
+JPG/JPEG files: 50 
+ 
+Image Files: 
+----------- 
+01. 0a39009952b5e39e47f929a7e1871ca8.jpg  
+02. 0d356408ba685735b4f7f2e02460c347.jpg  
+03. 1fd68add2fcd176bc0c9befde533459c.jpg  
+04. 2000f04ef9d082c5446e693e99f0bbb9.jpg  
+05. 759c16d2a6ae31315fb9ec8909a498f4.jpg  
+06. A++.jpg  
+07. a18b32eb04028ed71af95435929b6226.jpg  
+08. abea000d142b89f0f47fd280ec0f8315.jpg  
+09. b0a9b24d70faca596f212394278a939a.jpg  
+10. Backyard Woods.jpg  
+11. Bar2.jpg  
+12. bf4946fab2d156162793887678574460.jpg  
+13. BitCoins and Cash 2.jpg  
+14. BitCoins and Cash.jpg  
+15. BitCoins.jpg  
+16. c4d2241c2fcbdfbea0d321927583d968.jpg  
+17. c6aa55aae6a9664b27d6795a0971707a.jpg  
+18. Car.jpg  
+19. checks5.JPG  
+20. Chicken Coop.jpg  
+21. Confidence.jpg  
+22. dbc582133aa22d6905257402fd4748d0.jpg  
+23. e459452d1fe32b0f1600341f9d0cafb3.jpg  
+24. Employment.jpg  
+25. Energy.jpg  
+26. Family12.jpg  
+27. Family5.jpg  
+28. Healthy.jpg  
+29. Hot Tub5.jpg  
+30. Infrared Sauna.jpg  
+31. Interesting.jpg  
+32. Kitchen3.jpg  
+33. Money 1.jpg  
+34. Money 3.jpg  
+35. My Impact.jpg  
+36. Open Doors.jpg  
+37. Positive Thinking.jpg  
+38. Positive.jpg  
+39. Purposes.jpg  
+40. Saleen S7.jpg  
+41. sold1.JPG  
+42. sold14.JPG  
+43. sold16.JPG  
+44. sold17.JPG  
+45. sold2.JPG  
+46. SOLVED.jpg  
+47. Teeth.jpg  
+48. Theater.jpg  
+49. Thinking.jpg  
+50. Vacation.jpg  
+ 
+Usage Instructions: 
+------------------ 
+1. Select "Vision Board" from the Photo-Reader's Preloaded dropdown menu 
+2. The application will automatically discover and load all images from this directory 
+3. Use Previous/Next buttons to browse through images 
+4. Click "Play" to start a fullscreen slideshow presentation 
+5. Use keyboard controls (Space, Arrow keys) for navigation during slideshow 
+ 
+Adding New Images: 
+----------------- 
+• Simply copy image files to this directory 
+• Run this script again to update the index 
+• Supported formats: JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO 
+• For best results, use descriptive filenames 
+ 
+Maintenance Scripts: 
+------------------- 
+This directory contains several maintenance scripts (prefixed with _): 
+• _generate-index.js - Cross-platform Node.js script (recommended) 
+• _generate-index.bat - Windows batch script 
+• _generate-index.sh - Unix/Linux/macOS shell script 
+ 
+Script Information: 
+------------------ 
+Generator: _generate-index.bat 
+Version: 1.0.0 
+Platform: Windows Batch 
+Repository: Photo-Reader by bumpper 
