@@ -98,19 +98,20 @@
         <!-- Header with semantic markup -->
         <header class="control-bar" role="banner">
             <h1 class="visually-hidden">Photo-Reader - PDF Slideshow Viewer</h1>
-            <div class="control-group">
-                <button id="openBtn" class="btn" title="Select a local file to display">Open</button>
-                <button id="openFolderBtn" class="btn" title="Drag and drop images or select a folder containing images">Images</button>
+            <!-- Hidden file controls for logic, but not visible or in flex layout -->
+            <div style="width:0;height:0;overflow:hidden;position:absolute;">
+                <button id="openBtn" class="btn" title="Select a local file to display" style="display:none;">Open</button>
+                <button id="openFolderBtn" class="btn" title="Drag and drop images or select a folder containing images" style="display:none;">Images</button>
                 <button id="photoDirectoryBtn" class="btn" title="Select a folder of images" style="display: none;">Select Image Folder</button>
                 <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.epub,.mobi,.webp,.jpg,.jpeg,.png,.gif,.svg" style="display: none;">
                 <input type="file" id="folderInput" webkitdirectory style="display: none;">
             </div>
             
             <div class="control-group">
-                <select id="preloaded" title="Preloaded files for testing">
-                    <option value="">Preloaded Files</option>
+                <select id="preloaded" title="Preloaded files for testing" style="margin-right:10px;">
+                    <option value="">Menu:</option>
                     <option value=""></option>
-                    <option value="">+Add Document</option>
+                    <option value="add-document">+Add Document</option>
                     <option value="photo-directory">+Add Photos</option>
                     <option value="photo-directory-folder">+Add Photo Directory</option>
                     <option value=""></option>
@@ -128,8 +129,8 @@
             </div>
             
             <div class="control-group" title="Number of Pages to display at once">
-                <label for="pageView">Pages:</label>
-                <select id="pageView">
+                <select id="pageView" style="margin-right:10px;">
+                    <!--<option value="">Pages</option>-->
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -138,71 +139,61 @@
             
             
             <div class="control-group">
-                <button id="prevBtn" class="btn nav-btn" disabled title="Go Back 1 Page">◀</button>
-                <button id="nextBtn" class="btn nav-btn" disabled title="Go Forward 1 Page">▶</button>
+                <button id="prevBtn" class="btn nav-btn" disabled title="Go Back 1 Page" style="margin-left:10px;">◀</button>
+                <button id="nextBtn" class="btn nav-btn" disabled title="Go Forward 1 Page" style="margin-right:20px;">▶</button>
             </div>
             
             <div class="control-group" title="Page Range to use (or word range for TXT files)">
-                <label for="startPage">Start:</label>
-                <input type="number" id="startPage" min="1" value="1" class="page-input">
-            </div>
-            
-            <div class="control-group" title="Page Range to use (or word range for TXT files)">
-                <label for="endPage">End:</label>
-                <input type="number" id="endPage" min="1" value="1" class="page-input">
-            </div>
-            
-            <div class="control-group">
-                <label title="Randomized Order">
-                    <input type="checkbox" id="randomizedOrder"> 🎲
-                </label>
+                <!--<label for="startPage">Start:</label>-->
+                <input type="number" id="startPage" min="1" value="1" class="page-input" style="margin-right:5px; margin-left:0;">
+                <span style="margin: 0 5px;">To</span>
+                <!--<label for="endPage">End:</label>-->
+                <input type="number" id="endPage" min="1" value="1" class="page-input" style="margin-left:5px;">
             </div>
             
             <div class="control-group">
-                <label title="Reverse Order">
-                    <input type="checkbox" id="reverseOrder"> ⏪
-                </label>
+                <span id="randomizedOrderToggle" class="toggle-emoji" title="Randomized Order" role="button" tabindex="0">🎲</span>
             </div>
             
             <div class="control-group">
-                <label title="Rotate Content by 180°">
-                    <input type="checkbox" id="rotateContent"> 🔄
-                </label>
+                <span id="reverseOrderToggle" class="toggle-emoji" title="Reverse Order" role="button" tabindex="0">⏪</span>
             </div>
             
             <div class="control-group">
-                <label title="Mirror Content">
-                    <input type="checkbox" id="mirrorContent"> 🪞
-                </label>
+                <span id="rotateContentToggle" class="toggle-emoji" title="Rotate Content by 180°" role="button" tabindex="0">🔄</span>
             </div>
             
             <div class="control-group">
-                <label title="Vertical Guide for Speed Reading each line">
-                    <input type="checkbox" id="verticalGuide"> <span style="color: white;">|</span>
-                </label>
+                <span id="mirrorContentToggle" class="toggle-emoji" title="Mirror Content" role="button" tabindex="0">🪞</span>
             </div>
             
             <div class="control-group">
-                <label title="Place a centered focal point on-screen">
-                    <input type="checkbox" id="centerDot"> <span class="icon-center-dot"></span>
-                </label>
+                <span id="verticalGuideToggle" class="toggle-emoji vertical-pipe-emoji" title="Vertical Guide for Speed Reading each line" role="button" tabindex="0">|</span>
             </div>
             
             <div class="control-group">
-                <label title="Corner Points to defocus gaze">
-                    <input type="checkbox" id="cornerCircles"> <span class="icon-corner-circles"></span>
-                </label>
+                <span id="cornerCirclesToggle" class="toggle-emoji" title="Corner Points to defocus gaze" role="button" tabindex="0" style="margin-right:10px;"><span class="icon-corner-circles"></span></span>
+            </div>
+            
+            <div class="control-group">
+                <span id="centerDotToggle" class="toggle-emoji" title="Place a centered focal point on-screen" role="button" tabindex="0"><span class="icon-center-dot"></span></span>
             </div>
             
             <div class="control-group" title="Rate of change">
-                <label for="interval">Interval:</label>
-                <input type="number" id="interval" min="0.00" max="60.00" step="0.01" value="0.20" class="interval-input">
+                <label for="interval" style="margin-right:8px;">Interval:</label>
+                <input type="number" id="interval" min="0.00" max="60.00" step="0.01" value="0.20" class="interval-input" style="margin-right:10px;">
+                <label for="duration" style="margin-left:0; margin-right:8px;">Duration:</label>
+                <input type="number" id="duration" min="0.00" max="1.00" step="0.01" value="0.00" class="duration-input" style="width:70px; margin-left:0; margin-right:10px;">
             </div>
+
+                <div class="control-group" title="Transparency of preview/fullscreen">
+                    <label for="transparency">Transparency:</label>
+                    <input type="number" id="transparency" min="0" max="100" step="1" value="0" class="transparency-input" style="width:60px;">
+                    <label for="transparency" style="margin-right:10px; margin-right:10px;">%</label>
+                </div>
             
             <div class="control-group">
-                <label title="Tone Frequency to assist in reaching desired Brain wave state">
-                    <input type="checkbox" id="audioEnabled"> 🔊
-                </label>
+                <span id="audioEnabledToggle" class="toggle-emoji" title="Tone Frequency to assist in reaching desired Brain wave state" role="button" tabindex="0" style="margin-left:10px; margin-left:10px;">🔊</span>
                 <input type="number" id="audioFrequency" min="0.00" max="60.00" step="0.01" value="4.00" class="audio-frequency-input" title="Tone Frequency">
                 <label for="audioFrequency" title="Tone Frequency">Hz</label>
             </div>
@@ -230,6 +221,8 @@
                 </div>
             </div>
             
+            <!-- Overlay for transparency effect -->
+            <div id="transparencyOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99;display:none;"></div>
             <!-- Overlay for dots and circles -->
             <div class="overlay" id="overlay" aria-hidden="true"></div>
         </main>

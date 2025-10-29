@@ -1,5 +1,55 @@
 class PhotoReader {
+    applyTransparency() {
+        // Applies transparency to preview and fullscreen
+        const percent = this.transparency;
+        // Overlay approach: fade content visually
+        const overlay = document.getElementById('transparencyOverlay');
+        if (overlay) {
+            if (percent > 0) {
+                overlay.style.display = 'block';
+                overlay.style.background = '#000'; // or use body background color
+                overlay.style.opacity = percent / 100;
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+    }
+    updateToggleVisual(key) {
+        // Map feature key to toggle element ID
+        const idMap = {
+            randomizedOrder: 'randomizedOrderToggle',
+            reverseOrder: 'reverseOrderToggle',
+            rotateContent: 'rotateContentToggle',
+            mirrorContent: 'mirrorContentToggle',
+            verticalGuide: 'verticalGuideToggle',
+            centerDot: 'centerDotToggle',
+            cornerCircles: 'cornerCirclesToggle',
+            audioEnabled: 'audioEnabledToggle'
+        };
+        const el = document.getElementById(idMap[key]);
+        if (!el) {
+            console.log('updateToggleVisual: element not found for key', key);
+            return;
+        }
+        if (this.featureStates && this.featureStates[key]) {
+            el.classList.remove('disabled');
+            // Special style for verticalGuideToggle: make it extra bright and glowing
+            if (key === 'verticalGuide') {
+                el.classList.add('vertical-pipe-emoji');
+            }
+            console.log(`updateToggleVisual: ${key} enabled, removed .disabled`);
+        } else {
+            el.classList.add('disabled');
+            if (key === 'verticalGuide') {
+                el.classList.add('vertical-pipe-emoji'); // keep shape, but let .disabled override color
+            }
+            console.log(`updateToggleVisual: ${key} disabled, added .disabled`);
+        }
+        // Remove outline except for keyboard focus
+        el.addEventListener('mousedown', () => el.blur());
+    }
     constructor() {
+        console.log('PhotoReader constructor called.');
         this.pdfDoc = null;
         this.currentPage = 1;
         this.totalPages = 0;
@@ -9,7 +59,20 @@ class PhotoReader {
         this.audioContext = null;
         this.oscillator = null;
         this.gainNode = null;
-        
+
+        // Feature toggle state (explicitly initialize all keys)
+        // Default all toggles to disabled (false)
+        this.featureStates = {
+            randomizedOrder: false,
+            reverseOrder: false,
+            rotateContent: false,
+            mirrorContent: false,
+            verticalGuide: false,
+            centerDot: false,
+            cornerCircles: false,
+            audioEnabled: false
+        };
+
         // Text file support
         this.currentFileType = null; // 'pdf', 'txt', 'docx', 'epub', 'mobi', or 'image'
         this.textContent = null;
@@ -20,27 +83,39 @@ class PhotoReader {
         this.displayMode = 'word'; // 'word' or 'line'
         this.documentContent = null; // For storing parsed document content
         this.documentPages = []; // For storing document split into pages
-        
+
         // Image support
         this.imageFiles = []; // Array of image files for folder selection
         this.currentImageIndex = 0;
         this.imageUrls = []; // Track created object URLs for cleanup
-        
+
         // Randomized order support
-        this.randomizedSequence = []; // Array to store randomized order
-        this.currentRandomIndex = 0; // Current position in randomized sequence
-        
+        this.randomizedSequence = [];
+        this.currentRandomIndex = 0;
+
         this.initializeElements();
         this.bindEvents();
         this.setupPDFJS();
-        
+
         // Initialize display mode button state
         this.updateDisplayModeButton();
-        
+
+        // Load settings from localStorage (will update toggles)
+        this.loadSettings();
+
+        // Expose for debugging
+        window.PhotoReader = this;
+
         // Clean up image cache when page is closed
         window.addEventListener('beforeunload', () => {
             this.clearImageCache();
         });
+    }
+    
+    // Helper method to get view mode with default fallback to 1
+    getViewMode() {
+        const viewMode = parseInt(this.pageView.value);
+        return isNaN(viewMode) ? 1 : viewMode;
     }
     
     initializeElements() {
@@ -52,6 +127,7 @@ class PhotoReader {
         this.preloaded = document.getElementById('preloaded');
         this.displayModeBtn = document.getElementById('displayModeBtn');
         this.pageView = document.getElementById('pageView');
+        this.pageViewGroup = this.pageView.closest('.control-group');
         this.centerDot = document.getElementById('centerDot');
         this.cornerCircles = document.getElementById('cornerCircles');
         this.verticalGuide = document.getElementById('verticalGuide');
@@ -61,20 +137,57 @@ class PhotoReader {
         this.endPage = document.getElementById('endPage');
         this.randomizedOrder = document.getElementById('randomizedOrder');
         this.reverseOrder = document.getElementById('reverseOrder');
-        this.rotateContent = document.getElementById('rotateContent');
-        this.mirrorContent = document.getElementById('mirrorContent');
-        this.interval = document.getElementById('interval');
-        this.audioEnabled = document.getElementById('audioEnabled');
-        this.audioFrequency = document.getElementById('audioFrequency');
-        this.playBtn = document.getElementById('playBtn');
-        this.pdfContainer = document.getElementById('main-content');
-        this.pdfDisplay = document.getElementById('pdfDisplay');
-        this.dragDropArea = document.getElementById('dragDropArea');
-        this.overlay = document.getElementById('overlay');
-        this.container = document.querySelector('.container');
+    this.rotateContent = document.getElementById('rotateContent');
+    this.mirrorContent = document.getElementById('mirrorContent');
+    this.interval = document.getElementById('interval');
+    this.duration = document.getElementById('duration');
+    this.transparencyInput = document.getElementById('transparency');
+    this.audioEnabledToggle = document.getElementById('audioEnabledToggle');
+    this.audioFrequency = document.getElementById('audioFrequency');
+    this.playBtn = document.getElementById('playBtn');
+    this.pdfContainer = document.getElementById('main-content');
+    this.pdfDisplay = document.getElementById('pdfDisplay');
+    this.dragDropArea = document.getElementById('dragDropArea');
+    this.overlay = document.getElementById('overlay');
+    this.container = document.querySelector('.container');
     }
     
     bindEvents() {
+        // Navigation buttons
+        if (this.prevBtn) {
+            this.prevBtn.addEventListener('click', () => this.previousPage());
+        }
+        if (this.nextBtn) {
+            this.nextBtn.addEventListener('click', () => this.nextPage());
+        }
+        // Duration input: enforce range, save to localStorage
+        if (this.duration) {
+            const validateDuration = () => {
+                let val = parseFloat(this.duration.value);
+                if (isNaN(val) || val < 0) val = 0.00;
+                if (val > 1) val = 1.00;
+                val = Math.round(val * 100) / 100;
+                this.duration.value = val.toFixed(2);
+                this.saveSettings();
+            };
+            this.duration.addEventListener('change', validateDuration);
+            this.duration.addEventListener('input', validateDuration);
+            this.duration.addEventListener('blur', validateDuration);
+        }
+        if (this.transparencyInput) {
+            const updateTransparency = () => {
+                let val = parseInt(this.transparencyInput.value);
+                if (isNaN(val) || val < 0) val = 0;
+                if (val > 100) val = 100;
+                this.transparency = val;
+                this.transparencyInput.value = val;
+                this.saveSettings();
+                this.applyTransparency();
+            };
+            this.transparencyInput.addEventListener('change', updateTransparency);
+            this.transparencyInput.addEventListener('input', updateTransparency);
+            this.transparencyInput.addEventListener('blur', updateTransparency);
+        }
         this.openBtn.addEventListener('click', () => this.fileInput.click());
         this.openFolderBtn.addEventListener('click', () => this.handleImagesButtonClick());
         this.photoDirectoryBtn.addEventListener('click', () => this.handlePhotoDirectoryClick());
@@ -88,56 +201,59 @@ class PhotoReader {
             this.refreshPreviewArea();
             this.updateDisplay();
         });
-        this.centerDot.addEventListener('change', () => {
-            this.saveSettings();
-            this.updateOverlay();
+
+        // Emoji toggles: add click handlers for all
+        const emojiToggles = [
+            { key: 'randomizedOrder', id: 'randomizedOrderToggle' },
+            { key: 'reverseOrder', id: 'reverseOrderToggle' },
+            { key: 'rotateContent', id: 'rotateContentToggle' },
+            { key: 'mirrorContent', id: 'mirrorContentToggle' },
+            { key: 'verticalGuide', id: 'verticalGuideToggle' },
+            { key: 'centerDot', id: 'centerDotToggle' },
+            { key: 'cornerCircles', id: 'cornerCirclesToggle' },
+            { key: 'audioEnabled', id: 'audioEnabledToggle' }
+        ];
+        emojiToggles.forEach(({ key, id }) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', () => {
+                    this.featureStates[key] = !this.featureStates[key];
+                    this.updateToggleVisual(key);
+                    this.saveSettings();
+                    // If the toggle affects visual transforms or overlays, update preview area immediately
+                    if ([
+                        'rotateContent',
+                        'mirrorContent',
+                        'verticalGuide',
+                        'centerDot',
+                        'cornerCircles'
+                    ].includes(key)) {
+                        this.updateDisplay();
+                    }
+                    console.log(`Emoji toggle clicked: ${key}, new state:`, this.featureStates[key]);
+                });
+            }
         });
-        this.cornerCircles.addEventListener('change', () => {
-            this.saveSettings();
-            this.updateOverlay();
-        });
-        this.verticalGuide.addEventListener('change', () => {
-            this.saveSettings();
-            this.updateOverlay();
-        });
-        this.reverseOrder.addEventListener('change', () => this.saveSettings());
-        this.randomizedOrder.addEventListener('change', () => this.saveSettings());
-        this.rotateContent.addEventListener('change', () => {
-            this.saveSettings();
-            this.updateDisplay();
-        });
-        this.mirrorContent.addEventListener('change', () => {
-            this.saveSettings();
-            this.updateDisplay();
-        });
-        this.prevBtn.addEventListener('click', () => this.previousPage());
-        this.nextBtn.addEventListener('click', () => this.nextPage());
-        this.startPage.addEventListener('change', () => this.validatePageRange());
-        this.endPage.addEventListener('change', () => this.validatePageRange());
-        this.interval.addEventListener('change', () => {
-            this.saveSettings();
-            this.validateInterval();
-        });
-        this.audioEnabled.addEventListener('change', () => this.saveSettings());
+
         this.audioFrequency.addEventListener('change', () => {
             this.saveSettings();
             this.validateAudioFrequency();
         });
         this.playBtn.addEventListener('click', () => this.toggleSlideshow());
-        
+
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeydown(e));
-        
+
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => this.cleanupImageUrls());
-        
+
         // Setup drag and drop
         this.setupDragAndDrop();
-        
+
         // Mouse events for fullscreen navigation
         this.pdfDisplay.addEventListener('mousedown', (e) => this.handleMouseClick(e));
         this.pdfDisplay.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
-        
+
         // Fullscreen change events
         document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
         document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
@@ -386,27 +502,38 @@ class PhotoReader {
         const settings = {
             pageView: this.pageView.value,
             displayMode: this.displayMode,
-            centerDot: this.centerDot.checked,
-            cornerCircles: this.cornerCircles.checked,
-            verticalGuide: this.verticalGuide.checked,
-            reverseOrder: this.reverseOrder.checked,
-            randomizedOrder: this.randomizedOrder.checked,
-            rotateContent: this.rotateContent.checked,
-            mirrorContent: this.mirrorContent.checked,
+            centerDot: this.featureStates.centerDot,
+            cornerCircles: this.featureStates.cornerCircles,
+            verticalGuide: this.featureStates.verticalGuide,
+            reverseOrder: this.featureStates.reverseOrder,
+            randomizedOrder: this.featureStates.randomizedOrder,
+            rotateContent: this.featureStates.rotateContent,
+            mirrorContent: this.featureStates.mirrorContent,
             interval: this.interval.value,
-            audioEnabled: this.audioEnabled.checked,
-            audioFrequency: this.audioFrequency.value
+            duration: this.duration ? this.duration.value : '0.00',
+            audioEnabled: this.featureStates.audioEnabled,
+            audioFrequency: this.audioFrequency.value,
+            transparency: this.transparency
         };
         localStorage.setItem('photoReaderSettings', JSON.stringify(settings));
     }
     
     loadSettings() {
         const savedSettings = localStorage.getItem('photoReaderSettings');
+        // Always default to disabled if no saved settings
+        const defaultFeatureStates = {
+            randomizedOrder: false,
+            reverseOrder: false,
+            rotateContent: false,
+            mirrorContent: false,
+            verticalGuide: false,
+            centerDot: false,
+            cornerCircles: false,
+            audioEnabled: false
+        };
         if (savedSettings) {
             try {
                 const settings = JSON.parse(savedSettings);
-                
-                // Apply saved settings
                 if (settings.pageView) {
                     this.pageView.value = settings.pageView;
                 }
@@ -414,72 +541,78 @@ class PhotoReader {
                     this.displayMode = settings.displayMode;
                     this.displayModeBtn.textContent = this.displayMode === 'word' ? 'Word' : 'Line';
                 }
-                if (settings.centerDot !== undefined) {
-                    this.centerDot.checked = settings.centerDot;
-                }
-                if (settings.cornerCircles !== undefined) {
-                    this.cornerCircles.checked = settings.cornerCircles;
-                }
-                if (settings.verticalGuide !== undefined) {
-                    this.verticalGuide.checked = settings.verticalGuide;
-                }
-                if (settings.reverseOrder !== undefined) {
-                    this.reverseOrder.checked = settings.reverseOrder;
-                }
-                if (settings.randomizedOrder !== undefined) {
-                    this.randomizedOrder.checked = settings.randomizedOrder;
-                }
-                if (settings.rotateContent !== undefined) {
-                    this.rotateContent.checked = settings.rotateContent;
-                }
-                if (settings.mirrorContent !== undefined) {
-                    this.mirrorContent.checked = settings.mirrorContent;
-                }
+                // Restore featureStates for all toggles, defaulting to false if not present
+                Object.keys(defaultFeatureStates).forEach(key => {
+                    this.featureStates[key] = settings[key] !== undefined ? settings[key] : false;
+                    this.updateToggleVisual(key);
+                });
                 if (settings.interval) {
                     this.interval.value = settings.interval;
                 }
-                if (settings.audioEnabled !== undefined) {
-                    this.audioEnabled.checked = settings.audioEnabled;
+                if (settings.duration && this.duration) {
+                    this.duration.value = settings.duration;
                 }
                 if (settings.audioFrequency) {
                     this.audioFrequency.value = settings.audioFrequency;
                 }
+                if (settings.transparency !== undefined) {
+                    this.transparency = Math.max(0, Math.min(100, parseInt(settings.transparency)));
+                    if (this.transparencyInput) {
+                        this.transparencyInput.value = this.transparency;
+                    }
+                    this.applyTransparency();
+                }
             } catch (error) {
                 console.error('Error loading settings:', error);
+                // If error, reset all toggles to disabled
+                Object.keys(defaultFeatureStates).forEach(key => {
+                    this.featureStates[key] = false;
+                    this.updateToggleVisual(key);
+                });
             }
+        } else {
+            // No saved settings, set all toggles to disabled
+            Object.keys(defaultFeatureStates).forEach(key => {
+                this.featureStates[key] = false;
+                this.updateToggleVisual(key);
+            });
         }
     }
     
     async handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file) {
+            console.log('No file selected.');
             return;
         }
         
         const fileType = file.type;
         const fileName = file.name.toLowerCase();
+        console.log('File selected:', fileName, 'type:', fileType);
         
         try {
             this.showLoading();
             
             if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-                // Clear image cache when switching to PDF
+                console.log('Loading PDF...');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
+                if (this.pageViewGroup) this.pageViewGroup.style.display = '';
                 this.currentFileType = 'pdf';
                 const arrayBuffer = await file.arrayBuffer();
                 await this.loadPDF(arrayBuffer);
             } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
-                // Clear image cache when switching to text
+                console.log('Loading TXT...');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
+                if (this.pageViewGroup) this.pageViewGroup.style.display = 'none';
                 this.currentFileType = 'txt';
                 const text = await file.text();
                 await this.loadTextFile(text);
             } else if (fileName.endsWith('.docx')) {
-                // Clear image cache when switching to DOCX
+                console.log('Loading DOCX...');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -487,7 +620,7 @@ class PhotoReader {
                 const arrayBuffer = await file.arrayBuffer();
                 await this.loadDocumentFile(arrayBuffer, 'docx');
             } else if (fileName.endsWith('.epub')) {
-                // Clear image cache when switching to EPUB
+                console.log('Loading EPUB...');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -495,7 +628,7 @@ class PhotoReader {
                 const arrayBuffer = await file.arrayBuffer();
                 await this.loadEbookFile(arrayBuffer, 'epub');
             } else if (fileName.endsWith('.mobi')) {
-                // Clear image cache when switching to MOBI
+                console.log('Loading MOBI...');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -503,27 +636,19 @@ class PhotoReader {
                 const arrayBuffer = await file.arrayBuffer();
                 await this.loadEbookFile(arrayBuffer, 'mobi');
             } else if (this.isImageFile(fileName) || this.isImageType(fileType)) {
-                // Add image to existing collection or create new collection
+                console.log('Loading image...');
                 if (this.currentFileType === 'image' && this.imageFiles.length > 0) {
-                    // Add new image to existing collection
                     this.imageFiles.push(file);
                     this.currentFiles = this.imageFiles;
-                    
-                    // Display the newly added image
                     this.currentImageIndex = this.imageFiles.length - 1;
                     await this.loadImageFile(file);
-                    
-                    // Update navigation buttons for the expanded collection
                     this.updateNavigationButtons();
                 } else {
-                    // First image or switching from different file type
                     this.currentFileType = 'image';
                     this.imageFiles = [file];
                     this.currentFiles = this.imageFiles;
                     this.currentImageIndex = 0;
                     await this.loadImageFile(file);
-                    
-                    // Update navigation buttons for the new collection
                     this.updateNavigationButtons();
                 }
             } else {
@@ -531,7 +656,7 @@ class PhotoReader {
                 this.hideLoading();
                 return;
             }
-            
+            console.log('File loaded and rendered.');
         } catch (error) {
             console.error('Error loading file:', error);
             alert('Error loading file: ' + error.message);
@@ -541,60 +666,74 @@ class PhotoReader {
     
     async handlePreloadedSelect(event) {
         const selectedFile = event.target.value;
-        if (!selectedFile) return;
-        
+        console.log('Preloaded select changed:', selectedFile);
+        if (!selectedFile) {
+            console.log('No file selected.');
+            return;
+        }
+
+        // Handle +Add Document option
+        if (selectedFile === 'add-document') {
+            console.log('+Add Document selected.');
+            this.fileInput.click();
+            event.target.value = '';
+            return;
+        }
+
         // Handle Photo Directory drag & drop option
         if (selectedFile === 'photo-directory') {
-            this.showDragDropArea();
-            // Reset the dropdown
+            console.log('Photo Directory selected.');
+            this.handleImagesButtonClick();
             event.target.value = '';
             return;
         }
-        
+
         // Handle Photo Directory folder picker option (shows browser warning)
         if (selectedFile === 'photo-directory-folder') {
+            console.log('Photo Directory Folder selected.');
             this.folderInput.click();
-            // Reset the dropdown
             event.target.value = '';
             return;
         }
-        
+
         // Handle Vision Board option - load images from /img/ directory
         if (selectedFile === 'vision-board') {
+            console.log('Vision Board selected.');
             await this.loadVisionBoard();
-            // Reset the dropdown
             event.target.value = '';
             return;
         }
-        
+
         try {
             this.showLoading();
-            
+            console.log('Attempting to load file:', selectedFile);
             // Determine file type based on extension
             const fileName = selectedFile.toLowerCase();
             const response = await fetch(selectedFile);
             if (!response.ok) {
+                console.error('Failed to load file:', response.status);
                 throw new Error(`Failed to load file: ${response.status}`);
             }
-            
             if (fileName.endsWith('.pdf')) {
-                // Clear image cache when switching to PDF
+                console.log('PDF file selected.');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
+                if (this.pageViewGroup) this.pageViewGroup.style.display = '';
                 this.currentFileType = 'pdf';
                 const arrayBuffer = await response.arrayBuffer();
                 await this.loadPDF(arrayBuffer);
             } else if (fileName.endsWith('.txt')) {
-                // Clear image cache when switching to text
+                console.log('TXT file selected.');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
+                if (this.pageViewGroup) this.pageViewGroup.style.display = 'none';
                 this.currentFileType = 'txt';
                 const text = await response.text();
                 await this.loadTextFile(text);
             } else if (fileName.endsWith('.docx')) {
-                // Clear image cache when switching to DOCX
+                console.log('DOCX file selected.');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -602,7 +741,7 @@ class PhotoReader {
                 const arrayBuffer = await response.arrayBuffer();
                 await this.loadDocumentFile(arrayBuffer, 'docx');
             } else if (fileName.endsWith('.epub')) {
-                // Clear image cache when switching to EPUB
+                console.log('EPUB file selected.');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -610,7 +749,7 @@ class PhotoReader {
                 const arrayBuffer = await response.arrayBuffer();
                 await this.loadEbookFile(arrayBuffer, 'epub');
             } else if (fileName.endsWith('.mobi')) {
-                // Clear image cache when switching to MOBI
+                console.log('MOBI file selected.');
                 if (this.currentFileType === 'image') {
                     this.clearImageCache();
                 }
@@ -618,11 +757,11 @@ class PhotoReader {
                 const arrayBuffer = await response.arrayBuffer();
                 await this.loadEbookFile(arrayBuffer, 'mobi');
             } else {
+                console.error('Unsupported file type selected:', selectedFile);
                 alert('Unsupported file type. Please select a PDF, TXT, DOCX, EPUB, or MOBI file.');
                 this.hideLoading();
                 return;
             }
-            
         } catch (error) {
             console.error('Error loading preloaded file:', error);
             alert('Error loading preloaded file. Please make sure the file exists.');
@@ -789,6 +928,8 @@ class PhotoReader {
             this.pdfDisplay.offsetHeight; // Force reflow
             this.pdfDisplay.style.display = currentDisplay;
         }
+        // Apply transparency after refresh
+        this.applyTransparency();
     }
 
     async loadDocumentFile(data, fileType) {
@@ -1115,10 +1256,10 @@ class PhotoReader {
         
         // Apply transformations
         let transforms = [];
-        if (this.rotateContent.checked) {
+        if (this.featureStates.rotateContent) {
             transforms.push('rotate(180deg)');
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates.mirrorContent) {
             transforms.push('scaleX(-1)');
         }
         if (transforms.length > 0) {
@@ -1167,29 +1308,29 @@ class PhotoReader {
     async renderTextPreview() {
         this.pdfDisplay.innerHTML = '';
         this.pdfDisplay.classList.remove('two-pages', 'three-pages');
-        
+
         const textDisplay = document.createElement('div');
         textDisplay.className = 'text-display';
-        
+
         const textPreview = document.createElement('div');
         textPreview.className = 'text-preview';
         textPreview.textContent = this.textContent;
-        
-        // Apply transformations
+
+        // Apply transformations using featureStates
         let transforms = [];
-        if (this.rotateContent.checked) {
+        if (this.featureStates.rotateContent) {
             transforms.push('rotate(180deg)');
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates.mirrorContent) {
             transforms.push('scaleX(-1)');
         }
         if (transforms.length > 0) {
             textPreview.style.transform = transforms.join(' ');
         }
-        
+
         textDisplay.appendChild(textPreview);
         this.pdfDisplay.appendChild(textDisplay);
-        
+
         // Update overlay to show center dot and corner circles for text files
         this.updateOverlay();
     }
@@ -1212,7 +1353,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         // Immediately clear display for instant transition
         this.pdfDisplay.innerHTML = '';
@@ -1267,10 +1408,10 @@ class PhotoReader {
         
         // Apply transformations
         let transforms = [];
-        if (this.rotateContent.checked) {
+        if (this.featureStates && this.featureStates.rotateContent) {
             transforms.push('rotate(180deg)');
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates && this.featureStates.mirrorContent) {
             transforms.push('scaleX(-1)');
         }
         if (transforms.length > 0) {
@@ -1287,7 +1428,7 @@ class PhotoReader {
     async displayImages() {
         if (this.imageFiles.length === 0) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         // Clear the display but preserve drag drop area
         const dragDropArea = document.getElementById('dragDropArea');
@@ -1431,10 +1572,10 @@ class PhotoReader {
     
     applyImageTransforms(img) {
         let transform = '';
-        if (this.rotateContent.checked) {
+        if (this.featureStates && this.featureStates.rotateContent) {
             transform += ' rotate(180deg)';
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates && this.featureStates.mirrorContent) {
             transform += ' scaleX(-1)';
         }
         if (transform) {
@@ -1453,7 +1594,7 @@ class PhotoReader {
             const viewport = page.getViewport({ scale: 1 });
             
             let scale;
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             if (viewMode === 2) {
                 // For two-page view, each page gets half the width
                 const maxWidth = containerRect.width / 2;
@@ -1481,10 +1622,10 @@ class PhotoReader {
             
             // Apply transformations
             let transforms = [];
-            if (this.rotateContent.checked) {
+            if (this.featureStates.rotateContent) {
                 transforms.push('rotate(180deg)');
             }
-            if (this.mirrorContent.checked) {
+            if (this.featureStates.mirrorContent) {
                 transforms.push('scaleX(-1)');
             }
             if (transforms.length > 0) {
@@ -1522,8 +1663,8 @@ class PhotoReader {
         // Support overlay for PDF files
         if (this.pdfDoc) {
             // Vertical guide line for PDFs - create one line per page
-            if (this.verticalGuide.checked) {
-                const viewMode = parseInt(this.pageView.value);
+            if (this.featureStates.verticalGuide) {
+                const viewMode = this.getViewMode();
                 const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
                 
                 if (viewMode === 1) {
@@ -1572,15 +1713,15 @@ class PhotoReader {
             const displayRect = this.pdfDisplay.getBoundingClientRect();
             
             // Center dot
-            if (this.centerDot.checked) {
+            if (this.featureStates.centerDot) {
                 const centerDot = document.createElement('div');
                 centerDot.className = 'dot center-dot';
                 this.overlay.appendChild(centerDot);
             }
             
             // Corner circles
-            if (this.cornerCircles.checked) {
-                const viewMode = parseInt(this.pageView.value);
+            if (this.featureStates.cornerCircles) {
+                const viewMode = this.getViewMode();
                 const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
                 
                 if (viewMode === 1) {
@@ -1618,8 +1759,8 @@ class PhotoReader {
         // Support overlay for image files
         else if (this.currentFileType === 'image') {
             // Vertical guide line for images
-            if (this.verticalGuide.checked) {
-                const viewMode = parseInt(this.pageView.value);
+            if (this.featureStates.verticalGuide) {
+                const viewMode = this.getViewMode();
                 const imageContainers = this.pdfDisplay.querySelectorAll('.image-container');
                 
                 if (viewMode === 1) {
@@ -1666,15 +1807,15 @@ class PhotoReader {
             }
             
             // Center dot
-            if (this.centerDot.checked) {
+            if (this.featureStates.centerDot) {
                 const centerDot = document.createElement('div');
                 centerDot.className = 'dot center-dot';
                 this.overlay.appendChild(centerDot);
             }
             
             // Corner circles
-            if (this.cornerCircles.checked) {
-                const viewMode = parseInt(this.pageView.value);
+            if (this.featureStates.cornerCircles) {
+                const viewMode = this.getViewMode();
                 const imageContainers = this.pdfDisplay.querySelectorAll('.image-container');
                 
                 if (viewMode === 1) {
@@ -1712,7 +1853,7 @@ class PhotoReader {
         // Support overlay for text files and document files
         else if (this.currentFileType === 'txt' || this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
             // Vertical guide line for text/document files
-            if (this.verticalGuide.checked) {
+            if (this.featureStates.verticalGuide) {
                 const verticalLine = document.createElement('div');
                 verticalLine.className = 'vertical-guide';
                 
@@ -1780,7 +1921,7 @@ class PhotoReader {
             }
             
             // Center dot
-            if (this.centerDot.checked) {
+            if (this.featureStates.centerDot) {
                 const centerDot = document.createElement('div');
                 centerDot.className = 'dot center-dot';
                 
@@ -1852,7 +1993,7 @@ class PhotoReader {
             }
             
             // Corner circles - all four corners for text/document display
-            if (this.cornerCircles.checked) {
+            if (this.featureStates.cornerCircles) {
                 if (isFullscreen) {
                     // Create corner dots with viewport positioning for fullscreen
                     const cornerPositions = [
@@ -2215,8 +2356,8 @@ class PhotoReader {
             // Disable Pages dropdown for text files
             this.pageView.disabled = true;
         } else if (this.currentFileType === 'docx') {
-            // For DOCX files, show "Page" and disable both toggles
-            this.displayModeBtn.textContent = 'Page';
+            // For DOCX files, show "Pages" and disable both toggles
+            this.displayModeBtn.textContent = 'Pages';
             this.displayModeBtn.title = 'Page view mode';
             this.displayModeBtn.disabled = true;
             // Disable Pages dropdown for DOCX files
@@ -2224,7 +2365,7 @@ class PhotoReader {
         } else if (this.currentFileType === 'pdf' || this.currentFileType === 'epub' || 
                   this.currentFileType === 'mobi' || this.currentFileType === 'image') {
             // For PDF, EPUB, MOBI, and image files, show "Page" and disable display mode toggle
-            this.displayModeBtn.textContent = 'Page';
+            this.displayModeBtn.textContent = 'Pages';
             this.displayModeBtn.title = 'Page view mode';
             this.displayModeBtn.disabled = true;
             // Enable Pages dropdown for these file types
@@ -2249,25 +2390,65 @@ class PhotoReader {
     
     async startSlideshow() {
         if (!this.pdfDoc && !this.textContent && this.imageFiles.length === 0) return;
-        
+
         this.isPlaying = true;
         this.playBtn.textContent = 'Stop';
-        
+
         // Enter fullscreen
         await this.enterFullscreen();
-        
+
         // Start audio if enabled
-        if (this.audioEnabled.checked) {
+        if (this.featureStates.audioEnabled) {
             this.startAudio();
         }
-        
+
+        // Helper to get duration value in ms
+        const getDurationMs = () => {
+            if (this.duration && !isNaN(parseFloat(this.duration.value))) {
+                return Math.max(0, Math.min(1, parseFloat(this.duration.value))) * 1000;
+            }
+            return 0;
+        };
+
+        // Helper to get interval value in ms
+        const getIntervalMs = () => {
+            if (this.interval && !isNaN(parseFloat(this.interval.value))) {
+                return Math.max(0, parseFloat(this.interval.value)) * 1000;
+            }
+            return 0;
+        };
+
+        // Generalized slideshow logic for all file types
+        const runSlideshow = async (nextFn, displayFn) => {
+            // Show first slide
+            if (displayFn) await displayFn();
+            const loop = async () => {
+                // Show slide for Duration (if set)
+                const durationMs = getDurationMs();
+                if (durationMs > 0) {
+                    await new Promise(resolve => setTimeout(resolve, durationMs));
+                }
+                // Wait for Interval (if set)
+                const intervalMs = getIntervalMs();
+                if (intervalMs > 0) {
+                    await new Promise(resolve => setTimeout(resolve, intervalMs));
+                }
+                // Next slide
+                await nextFn();
+                // Continue if still playing
+                if (this.isPlaying) {
+                    this.slideInterval = setTimeout(loop, 0);
+                }
+            };
+            this.slideInterval = setTimeout(loop, 0);
+        };
+
         if (this.currentFileType === 'image') {
             // Image mode: set starting position based on mode
-            if (this.randomizedOrder.checked) {
-                // Generate new randomized sequence
+            if (this.featureStates.randomizedOrder) {
                 this.generateRandomizedSequence();
                 this.currentImageIndex = this.randomizedSequence[0];
-            } else if (this.reverseOrder.checked) {
+            } else if (this.featureStates.reverseOrder) {
                 const endImage = parseInt(this.endPage.value) - 1;
                 this.currentImageIndex = Math.min(this.imageFiles.length - 1, Math.max(0, endImage));
             } else {
@@ -2275,27 +2456,16 @@ class PhotoReader {
                 this.currentImageIndex = Math.max(0, startImage);
             }
             this.currentPage = this.currentImageIndex + 1;
-            
-            // Display current image(s)
-            await this.displayImages();
-            
-            // Start slideshow timer for images
-            const intervalMs = parseFloat(this.interval.value) * 1000;
-            this.slideInterval = setInterval(async () => {
+            await runSlideshow(async () => {
                 await this.nextImageSlide();
-                // Ensure overlay is updated after each slide change
-                setTimeout(() => {
-                    this.updateOverlay();
-                }, 50);
-            }, intervalMs);
+                setTimeout(() => { this.updateOverlay(); }, 50);
+            }, async () => { await this.displayImages(); });
         } else if (this.currentFileType === 'txt') {
-            // Text mode: set starting position based on mode
             if (this.displayMode === 'line') {
-                if (this.randomizedOrder.checked) {
-                    // Generate new randomized sequence for lines
+                if (this.featureStates.randomizedOrder) {
                     this.generateRandomizedSequence();
                     this.currentLineIndex = Math.max(0, Math.min(this.textLines.length - 1, this.randomizedSequence[0]));
-                } else if (this.reverseOrder.checked) {
+                } else if (this.featureStates.reverseOrder) {
                     const endLine = parseInt(this.endPage.value) - 1;
                     this.currentLineIndex = Math.max(0, Math.min(this.textLines.length - 1, endLine));
                 } else {
@@ -2303,11 +2473,10 @@ class PhotoReader {
                     this.currentLineIndex = Math.max(0, startLine);
                 }
             } else {
-                if (this.randomizedOrder.checked) {
-                    // Generate new randomized sequence for words
+                if (this.featureStates.randomizedOrder) {
                     this.generateRandomizedSequence();
                     this.currentWordIndex = Math.max(0, Math.min(this.textWords.length - 1, this.randomizedSequence[0]));
-                } else if (this.reverseOrder.checked) {
+                } else if (this.featureStates.reverseOrder) {
                     const endWord = parseInt(this.endPage.value) - 1;
                     this.currentWordIndex = Math.max(0, Math.min(this.textWords.length - 1, endWord));
                 } else {
@@ -2315,49 +2484,27 @@ class PhotoReader {
                     this.currentWordIndex = Math.max(0, startWord);
                 }
             }
-            await this.displayCurrentText();
-            
-            // Start word progression timer
-            const intervalMs = parseFloat(this.interval.value) * 1000;
-            this.slideInterval = setInterval(() => {
-                this.nextText();
-            }, intervalMs);
+            await runSlideshow(() => this.nextText(), () => this.displayCurrentText());
         } else if (this.currentFileType === 'docx' || this.currentFileType === 'epub' || this.currentFileType === 'mobi') {
-            // Document mode: set starting position based on mode
-            if (this.randomizedOrder.checked) {
-                // Generate new randomized sequence for documents
+            if (this.featureStates.randomizedOrder) {
                 this.generateRandomizedSequence();
-                this.currentPage = this.randomizedSequence[0] + 1; // Convert back to 1-based
-            } else if (this.reverseOrder.checked) {
+                this.currentPage = this.randomizedSequence[0] + 1;
+            } else if (this.featureStates.reverseOrder) {
                 this.currentPage = parseInt(this.endPage.value);
             } else {
                 this.currentPage = parseInt(this.startPage.value);
             }
-            await this.updateDisplay();
-            
-            // Start slideshow timer for documents
-            const intervalMs = parseFloat(this.interval.value) * 1000;
-            this.slideInterval = setInterval(() => {
-                this.nextDocumentSlide();
-            }, intervalMs);
+            await runSlideshow(() => this.nextDocumentSlide(), () => this.updateDisplay());
         } else {
-            // PDF mode: set starting position based on mode
-            if (this.randomizedOrder.checked) {
-                // Generate new randomized sequence for PDFs
+            if (this.featureStates.randomizedOrder) {
                 this.generateRandomizedSequence();
-                this.currentPage = this.randomizedSequence[0] + 1; // Convert back to 1-based
-            } else if (this.reverseOrder.checked) {
+                this.currentPage = this.randomizedSequence[0] + 1;
+            } else if (this.featureStates.reverseOrder) {
                 this.currentPage = parseInt(this.endPage.value);
             } else {
                 this.currentPage = parseInt(this.startPage.value);
             }
-            await this.updateDisplay();
-            
-            // Start slideshow timer
-            const intervalMs = parseFloat(this.interval.value) * 1000;
-            this.slideInterval = setInterval(() => {
-                this.nextSlide();
-            }, intervalMs);
+            await runSlideshow(() => this.nextSlide(), () => this.updateDisplay());
         }
     }
     
@@ -2446,10 +2593,10 @@ class PhotoReader {
         
         // Apply transformations
         let transforms = [];
-        if (this.rotateContent.checked) {
+        if (this.featureStates.rotateContent) {
             transforms.push('rotate(180deg)');
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates.mirrorContent) {
             transforms.push('scaleX(-1)');
         }
         if (transforms.length > 0) {
@@ -2481,10 +2628,10 @@ class PhotoReader {
 
         // Apply transformations
         let transforms = [];
-        if (this.rotateContent.checked) {
+        if (this.featureStates.rotateContent) {
             transforms.push('rotate(180deg)');
         }
-        if (this.mirrorContent.checked) {
+        if (this.featureStates.mirrorContent) {
             transforms.push('scaleX(-1)');
         }
         if (transforms.length > 0) {
@@ -2500,7 +2647,7 @@ class PhotoReader {
         const startWord = parseInt(this.startPage.value) - 1;
         const endWord = parseInt(this.endPage.value) - 1;
         
-        if (this.randomizedOrder.checked) {
+    if (this.featureStates.randomizedOrder) {
             // Randomized mode: move to next in randomized sequence
             this.currentRandomIndex++;
             if (this.currentRandomIndex >= this.randomizedSequence.length) {
@@ -2509,7 +2656,7 @@ class PhotoReader {
                 this.currentRandomIndex = 0;
             }
             this.currentWordIndex = this.randomizedSequence[this.currentRandomIndex];
-        } else if (this.reverseOrder.checked) {
+    } else if (this.featureStates.reverseOrder) {
             // Reverse mode: go backwards
             this.currentWordIndex--;
             if (this.currentWordIndex < startWord) {
@@ -2530,7 +2677,7 @@ class PhotoReader {
         const startLine = parseInt(this.startPage.value) - 1;
         const endLine = parseInt(this.endPage.value) - 1;
 
-        if (this.randomizedOrder.checked) {
+    if (this.featureStates.randomizedOrder) {
             // Randomized mode: move to next in randomized sequence
             this.currentRandomIndex++;
             if (this.currentRandomIndex >= this.randomizedSequence.length) {
@@ -2539,7 +2686,7 @@ class PhotoReader {
                 this.currentRandomIndex = 0;
             }
             this.currentLineIndex = this.randomizedSequence[this.currentRandomIndex];
-        } else if (this.reverseOrder.checked) {
+    } else if (this.featureStates.reverseOrder) {
             // Reverse mode: go backwards
             this.currentLineIndex--;
             if (this.currentLineIndex < startLine) {
@@ -2580,9 +2727,9 @@ class PhotoReader {
         
         const startPage = parseInt(this.startPage.value);
         const endPage = parseInt(this.endPage.value);
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
-        if (this.randomizedOrder.checked) {
+    if (this.featureStates.randomizedOrder) {
             // Randomized mode: move to next in randomized sequence
             this.currentRandomIndex++;
             if (this.currentRandomIndex >= this.randomizedSequence.length) {
@@ -2591,7 +2738,7 @@ class PhotoReader {
                 this.currentRandomIndex = 0;
             }
             this.currentPage = this.randomizedSequence[this.currentRandomIndex] + 1; // Convert back to 1-based
-        } else if (this.reverseOrder.checked) {
+    } else if (this.featureStates.reverseOrder) {
             // Reverse mode: go backwards
             this.currentPage -= viewMode;
             if (this.currentPage < startPage) {
@@ -2611,9 +2758,9 @@ class PhotoReader {
     async nextImageSlide() {
         const startIndex = parseInt(this.startPage.value) - 1; // Convert to 0-based index
         const endIndex = parseInt(this.endPage.value) - 1;   // Convert to 0-based index
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
-        if (this.randomizedOrder.checked) {
+    if (this.featureStates.randomizedOrder) {
             // Randomized mode: move to next in randomized sequence
             this.currentRandomIndex++;
             if (this.currentRandomIndex >= this.randomizedSequence.length) {
@@ -2622,7 +2769,7 @@ class PhotoReader {
                 this.currentRandomIndex = 0;
             }
             this.currentImageIndex = this.randomizedSequence[this.currentRandomIndex];
-        } else if (this.reverseOrder.checked) {
+    } else if (this.featureStates.reverseOrder) {
             // Reverse mode: go backwards by page count
             this.currentImageIndex -= viewMode;
             if (this.currentImageIndex < startIndex) {
@@ -2655,7 +2802,7 @@ class PhotoReader {
         const startPage = parseInt(this.startPage.value);
         const endPage = parseInt(this.endPage.value);
         
-        if (this.randomizedOrder.checked) {
+    if (this.featureStates.randomizedOrder) {
             // Randomized mode: move to next in randomized sequence
             this.currentRandomIndex++;
             if (this.currentRandomIndex >= this.randomizedSequence.length) {
@@ -2664,7 +2811,7 @@ class PhotoReader {
                 this.currentRandomIndex = 0;
             }
             this.currentPage = this.randomizedSequence[this.currentRandomIndex] + 1; // Convert back to 1-based
-        } else if (this.reverseOrder.checked) {
+    } else if (this.featureStates.reverseOrder) {
             // Reverse mode: go backwards
             this.currentPage--;
             if (this.currentPage < startPage) {
@@ -2741,36 +2888,32 @@ class PhotoReader {
                                document.webkitFullscreenElement || 
                                document.mozFullScreenElement || 
                                document.msFullscreenElement);
-        
+        // Always apply transparency on fullscreen change
+        this.applyTransparency();
         // Handle exiting fullscreen
         if (!isFullscreen) {
             // Remove the fullscreen class from container
             this.container.classList.remove('fullscreen');
-            
             // Stop slideshow if it's playing
             if (this.isPlaying) {
                 this.stopSlideshow();
             }
-            
             // Clean up fullscreen overlay elements
             const fullscreenDot = document.getElementById('fullscreen-center-dot');
             const fullscreenLine = document.getElementById('fullscreen-vertical-line');
             if (fullscreenDot) fullscreenDot.remove();
             if (fullscreenLine) fullscreenLine.remove();
             document.querySelectorAll('.fullscreen-corner-dot').forEach(dot => dot.remove());
-            
             // Ensure UI is properly restored by resetting key styles
             this.container.style.display = 'flex';
             this.container.style.position = 'static';
             this.container.style.width = '';
             this.container.style.height = '';
-            
             // Make sure the control bar is visible
             const controlBar = document.querySelector('.control-bar');
             if (controlBar) {
                 controlBar.style.display = '';
             }
-            
             // Force a complete UI refresh
             setTimeout(() => {
                 this.updateDisplay();
@@ -2940,7 +3083,7 @@ class PhotoReader {
             // Go back by viewMode pages for PDFs, loop to end if at start
             const startPage = parseInt(this.startPage.value);
             const endPage = parseInt(this.endPage.value);
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             this.currentPage -= viewMode;
             if (this.currentPage < startPage) {
                 this.currentPage = endPage; // Loop to end
@@ -2985,7 +3128,7 @@ class PhotoReader {
                 // In reverse mode, advance chronologically forward by viewMode pages and loop to start at end
                 const startPage = parseInt(this.startPage.value);
                 const endPage = parseInt(this.endPage.value);
-                const viewMode = parseInt(this.pageView.value);
+                const viewMode = this.getViewMode();
                 this.currentPage += viewMode;
                 if (this.currentPage > endPage) {
                     this.currentPage = startPage; // Loop to start
@@ -3019,7 +3162,7 @@ class PhotoReader {
         
         if (this.currentFileType === 'image') {
             // Image navigation - move by page count
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             this.currentImageIndex -= viewMode;
             if (this.currentImageIndex < 0) {
                 this.currentImageIndex = 0;
@@ -3044,7 +3187,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         this.currentPage -= viewMode;
         
         if (this.currentPage < 1) {
@@ -3076,7 +3219,7 @@ class PhotoReader {
         
         if (this.currentFileType === 'image') {
             // Image navigation - move by page count
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             this.currentImageIndex += viewMode;
             if (this.currentImageIndex >= this.imageFiles.length) {
                 this.currentImageIndex = this.imageFiles.length - 1;
@@ -3101,7 +3244,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         this.currentPage += viewMode;
         
         if (this.currentPage > this.totalPages) {
@@ -3122,7 +3265,7 @@ class PhotoReader {
         
         if (this.currentFileType === 'image') {
             // Enable navigation buttons for image mode
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             this.prevBtn.disabled = this.currentImageIndex <= 0;
             this.nextBtn.disabled = this.currentImageIndex + viewMode >= this.imageFiles.length;
             return;
@@ -3141,7 +3284,7 @@ class PhotoReader {
             return;
         }
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         // Enable/disable previous button
         this.prevBtn.disabled = this.currentPage <= 1;
@@ -3669,3 +3812,4 @@ class PhotoReader {
 document.addEventListener('DOMContentLoaded', () => {
     new PhotoReader();
 });
+

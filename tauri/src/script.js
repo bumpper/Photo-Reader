@@ -23,6 +23,12 @@ class PhotoReader {
         this.setupPDFJS();
     }
     
+    // Helper method to get view mode with default fallback to 1
+    getViewMode() {
+        const viewMode = this.getViewMode();
+        return isNaN(viewMode) ? 1 : viewMode;
+    }
+    
     initializeElements() {
         this.openBtn = document.getElementById('openBtn');
         this.fileInput = document.getElementById('fileInput');
@@ -784,7 +790,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         // Immediately clear display for instant transition
         this.pdfDisplay.innerHTML = '';
@@ -867,7 +873,7 @@ class PhotoReader {
             const viewport = page.getViewport({ scale: 1 });
             
             let scale;
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             if (viewMode === 2) {
                 // For two-page view, each page gets half the width
                 const maxWidth = containerRect.width / 2;
@@ -924,7 +930,7 @@ class PhotoReader {
         if (this.pdfDoc) {
             // Vertical guide line for PDFs - create one line per page
             if (this.verticalGuide.checked) {
-                const viewMode = parseInt(this.pageView.value);
+                const viewMode = this.getViewMode();
                 const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
                 
                 if (viewMode === 1) {
@@ -981,7 +987,7 @@ class PhotoReader {
             
             // Corner circles
             if (this.cornerCircles.checked) {
-                const viewMode = parseInt(this.pageView.value);
+                const viewMode = this.getViewMode();
                 const pages = this.pdfDisplay.querySelectorAll('.pdf-page');
                 
                 if (viewMode === 1) {
@@ -1296,7 +1302,7 @@ class PhotoReader {
     async nextSlide() {
         const startPage = parseInt(this.startPage.value);
         const endPage = parseInt(this.endPage.value);
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         if (this.reverseOrder.checked) {
             // Reverse mode: go backwards
@@ -1531,7 +1537,7 @@ class PhotoReader {
             // Go back by viewMode pages for PDFs, loop to end if at start
             const startPage = parseInt(this.startPage.value);
             const endPage = parseInt(this.endPage.value);
-            const viewMode = parseInt(this.pageView.value);
+            const viewMode = this.getViewMode();
             this.currentPage -= viewMode;
             if (this.currentPage < startPage) {
                 this.currentPage = endPage; // Loop to end
@@ -1576,7 +1582,7 @@ class PhotoReader {
                 // In reverse mode, advance chronologically forward by viewMode pages and loop to start at end
                 const startPage = parseInt(this.startPage.value);
                 const endPage = parseInt(this.endPage.value);
-                const viewMode = parseInt(this.pageView.value);
+                const viewMode = this.getViewMode();
                 this.currentPage += viewMode;
                 if (this.currentPage > endPage) {
                     this.currentPage = startPage; // Loop to start
@@ -1603,7 +1609,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         this.currentPage -= viewMode;
         
         if (this.currentPage < 1) {
@@ -1628,7 +1634,7 @@ class PhotoReader {
         
         if (!this.pdfDoc) return;
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         this.currentPage += viewMode;
         
         if (this.currentPage > this.totalPages) {
@@ -1660,7 +1666,7 @@ class PhotoReader {
             return;
         }
         
-        const viewMode = parseInt(this.pageView.value);
+        const viewMode = this.getViewMode();
         
         // Enable/disable previous button
         this.prevBtn.disabled = this.currentPage <= 1;
@@ -1674,3 +1680,4 @@ class PhotoReader {
 document.addEventListener('DOMContentLoaded', () => {
     new PhotoReader();
 });
+
