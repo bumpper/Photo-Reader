@@ -6,27 +6,16 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
-    "dev:windows": "tauri dev",
-    "dev:mac": "tauri dev",
-    "dev:linux": "tauri dev",
-    "build:windows": "tauri build --bundles msi nsis",
-    "build:mac": "tauri build --bundles dmg app",
-    "build:linux": "tauri build --bundles deb appimage",
-    "build:linux-deb": "tauri build --bundles deb appimage",
-    "build:linux-rpm": "tauri build --bundles rpm",
-    "build:fedora": "tauri build --bundles rpm",
-    "build:macos": "tauri build --bundles dmg app",
-    "platform:info": "node scripts/platform-utils.js"
+    "build:windows": "tauri build --target x86_64-pc-windows-msvc",
+    "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+    "build:macos": "tauri build --target x86_64-apple-darwin"
   },
   "keywords": [
     "pdf-viewer",
     "slideshow",
     "document-viewer",
     "speed-reading",
-    "presentation",
-    "cross-platform",
-    "tauri",
-    "desktop-app"
+    "presentation"
   ],
   "author": "Radius.Center",
   "license": "MIT",

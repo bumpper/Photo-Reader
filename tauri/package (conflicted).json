@@ -1,0 +1,36 @@
+{
+  "name": "photo-reader",
+  "version": "1.0.0",
+  "description": "Advanced PDF & Text Slideshow Viewer - Multi-Page Display Tool",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:windows": "tauri dev",
+    "dev:mac": "tauri dev",
+    "dev:linux": "tauri dev",
+    "build:windows": "tauri build --bundles msi nsis",
+    "build:mac": "tauri build --bundles dmg app",
+    "build:linux": "tauri build --bundles deb appimage",
+    "build:linux-deb": "tauri build --bundles deb appimage",
+    "build:linux-rpm": "tauri build --bundles rpm",
+    "build:fedora": "tauri build --bundles rpm",
+    "build:macos": "tauri build --bundles dmg app",
+    "platform:info": "node scripts/platform-utils.js"
+  },
+  "keywords": [
+    "pdf-viewer",
+    "slideshow",
+    "document-viewer",
+    "speed-reading",
+    "presentation",
+    "cross-platform",
+    "tauri",
+    "desktop-app"
+  ],
+  "author": "Radius.Center",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}
